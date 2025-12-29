@@ -1,15 +1,20 @@
 # Pixel-NeRF: Multi-View Stereo Enhanced (in Colab)
 
-본 프로젝트는 **Pixel-NeRF** (Yu et al., 2021)의 아키텍처를 기반으로, **Multi-View Stereo (MVS)** 개념(Variance 기반 정합성 판단)과 **FPN(Feature Pyramid Network)** 을 도입하여 학습 효율을 극대화한 구현체입니다.
+본 프로젝트는 Pixel-NeRF(Yu et al., 2021)의 아키텍처를 기반으로, Multi-View Stereo (MVS) 개념(Variance 기반 정합성 판단)과 FPN(Feature Pyramid Network)을 도입하여 학습 효율을 극대화한 구현체입니다.
 
-Colab 환경에서도 **약 30시간** 의 학습만으로 ShapeNet 차량 데이터셋에 대해 준수한 3D 형상을 복원할 수 있도록 설계되었습니다.
+Colab 환경에서도 약 30시간의 학습만으로 ShapeNet 차량 데이터셋에 대해 준수한 3D 형상을 복원할 수 있도록 설계하였습니다.
+
 
 <br>
 
 ## 🎥 Demo Results
-![Rendering Demo](/rendering_demo.gif)
+
+<p align="center">
+  <img src="/rendering_demo.gif" alt="Demo Results" width="360">
+</p>
 
 <br>
+
 
 ---
 
@@ -17,7 +22,7 @@ Colab 환경에서도 **약 30시간** 의 학습만으로 ShapeNet 차량 데�
 
 프로젝트의 목표는 GPU 환경에 손쉽게 접근할 수 있는 Colab 환경 내에서 pixel-NeRF를 활용하고, 그에 따른 최상의 기하학적 품질을 얻는 것입니다. 제한된 GPU 사용량을 고려하여 기존의 Few-shot(1~2뷰) 학습 방식 대신, **멀티 뷰(6-views)** 를 사용하여 학습 시간을 줄이고 빠르게 학습될 수 있게 하였습니다. 
 
-| 구분 | Original Pixel-NeRF | **Ours (Colab Optimized)** |
+| 구분 | Original Pixel-NeRF | **Colab Optimized** |
 | :--- | :--- | :--- |
 | **Environment** | Heavy Workstation | **Google Colab (Ready-to-Run)** |
 | **Input Views** | 1 ~ 2 Views (Sparse) | **6 Views (Geometric Constraints)** |
@@ -35,11 +40,7 @@ Colab 환경에서도 **약 30시간** 의 학습만으로 ShapeNet 차량 데�
 
 ### 1. Environment Setup
 Colab 노트북에서 별도의 가상환경 설정 없이, 필요한 라이브러리만 설치하면 즉시 작동합니다.
-```bash
-# Colab 셀에서 실행
-!pip install imageio tqdm matplotlib configargparse
 
-```
 
 ### 2. Data Loading (One-Line Command)
 
