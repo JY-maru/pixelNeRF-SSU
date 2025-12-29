@@ -7,7 +7,7 @@ Colab 환경에서도 **약 30시간** 의 학습만으로 ShapeNet 차량 데�
 <br>
 
 ## 🎥 Demo Results
-/rendering_demo.gif
+![Rendering Demo](/rendering_demo.gif)
 
 <br>
 
