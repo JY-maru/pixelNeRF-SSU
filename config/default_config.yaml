@@ -1,0 +1,96 @@
+# config/default_config.yaml
+data:
+  data_root: "/content/pixNeRF_shapeNet_v2_data"
+  num_source_views: 6
+  image_size: [128, 128]
+  z_near: 0.1
+  z_far: 3.0
+  use_imagenet_normalize: true
+
+  enable_filtering: true             
+  min_view_angle: 10               # 최소 각도 (너무 비슷한 view 제외)
+  max_view_angle: 60               # degrees
+  min_camera_distance: 1.0         # 최소 거리 (같은 view 제외)
+  max_camera_distance: 2.0
+  min_elevation: 5.0              # 바닥면 제거 (도 단위)
+  max_elevation: 75.0             # 정수리 제거 (도 단위)
+  
+  # Training
+  num_train_instances: 10000    
+  repeat_factor: 1                # 각 객체 반복 수 
+  
+  # Validation  
+  num_val_instances: 1000      
+  
+  # Test 
+  num_test_instances: 10000        # 3개 (unseen)
+  
+model:
+  encoder_type: "resnet50" 
+  encoder_pretrained: true
+  feature_dim: 512
+  d_hidden: 256
+  n_blocks: 5
+  combine_type: "average"
+  n_coarse: 64
+  n_fine: 128
+  white_bkgd : true
+  noise_std: 0.5
+  use_pe: true
+  pe_freq_pos: 10
+  pe_freq_dir: 4
+  density_lambda: 0.001
+
+training:
+  batch_size: 2
+  num_epochs: 400
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  num_rays_per_batch: 2048
+  chunk_size: 4096
+
+  fg_sampling_ratio: 0.6
+  fg_threshold: 0.05
+
+  log_every_n_steps: 1000
+  log_every_n_epochs: 10
+  val_every_n_steps: 0
+  val_every_n_epochs: 5
+  save_every_n_steps: 0
+  save_every_n_epochs: 5
+  checkpoint_dir: "./checkpoints"
+  resume_from: null
+  step_debug: 200 
+
+
+optimizer:
+  type: "adam"
+  beta1: 0.9
+  beta2: 0.999
+  eps: 1e-8
+  grad_clip: 1.0
+
+scheduler:
+  type: "exponential"  
+  gamma: 0.98          # 매 epoch마다 0.98배 감소
+
+
+inference:
+  checkpoint_path: "./checkpoints/checkpoint_epoch_125.pth"
+  output_dir: "./outputs"
+  video_fps: 30
+  chunk_size: 2048
+
+tto:
+  enabled: true             # 실행 시 TTO 수행 여부
+  num_steps: 500            # 최적화 스텝 수
+  learning_rate: 0.00001    # 1e-5
+  batch_rays: 512           # 배치당 레이 수
+  image_size: [128, 128]    # TTO용 고해상도 이미지 크기
+  
+debug:
+  enabled: false              # Debug mode on/off
+  log_first_batch: false       # Log first batch details
+  log_every_n_steps: 1000      # Log tensor info every N steps
+  check_nan_inf: true         # Check for NaN/Inf
+  save_debug_images: false    # Save intermediate images
