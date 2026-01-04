@@ -115,7 +115,7 @@ inst_id/
 단순히 뷰 개수만 늘린 것이 아니라, 늘어난 정보를 효과적으로 처리하기 위해 모델 아키텍처를 **Stereo Matching**에 적합한 구조로 고도화했습니다. 전체 파이프라인은 아래의 순서로 진행됩니다.
 
 ### 1. Multi-Scale Feature Extraction (FPN)
-기존 ResNet의 단일 레이어 특징맵만 사용할 경우 발생하는 정보 손실을 막기 위해 **FPN(Feature Pyramid Network)**을 도입했습니다.
+기존 ResNet의 단일 레이어 특징맵만 사용할 경우 발생하는 정보 손실을 막기 위해 **FPN(Feature Pyramid Network)** 을 도입했습니다.
 
 <p align="center">
   <img src="/images/1-2.encoder_FPN_.jpg" alt="FPN structure" width="800">
@@ -143,7 +143,7 @@ inst_id/
 </p>
 
 * **기존(Average Only):** 뷰 간의 차이 정보가 희석되어 3D 구조 파악이 어려움.
-* **제안(Average + Variance):** **Variance(분산)**은 "여러 카메라가 동일한 색상/특징을 보고 있는가?"를 나타내는 지표입니다.
+* **제안(Average + Variance):** 이 때 Variance(분산)은 여러 카메라가 동일한 색상/특징을 보고 있는가를 나타내는 지표입니다.
     * **Low Variance:** 표면(Surface)일 확률 높음 (Stereo Cue).
     * **High Variance:** 허공이거나 가려진(Occluded) 영역.
 
