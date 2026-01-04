@@ -13,6 +13,16 @@ from torchvision import transforms
 DEBUG_SAVE_DIR = "debug_projections"
 os.makedirs(DEBUG_SAVE_DIR, exist_ok=True)
 
+# ==============================================
+#  ShapeNet 좌표계 변환 행렬 (Source of Truth)
+# ==============================================
+SHAPENET_ROTATION_MATRIX = torch.tensor([
+    [ 0,  1,  0,  0],
+    [-1,  0,  0,  0],
+    [ 0,  0,  1,  0],
+    [ 0,  0,  0,  1]
+], dtype=torch.float32)
+
 class ShapeNetDataset(Dataset):
     """ShapeNet dataset loader (Base Class)"""
     
@@ -87,9 +97,8 @@ class ShapeNetDataset(Dataset):
         
         return intrinsics, original_size
 
-# ==============================================================================
-# ⚡ [최적화됨] 병렬 처리 작업자 함수 (NumPy + Early Pruning)
-# ==============================================================================
+
+# 병렬 처리 작업자 함수 (NumPy + Early Pruning)
 def process_single_instance(args):
     """
     단일 인스턴스 처리: NumPy 변환 및 조기 가지치기(Early Pruning) 적용으로 속도 대폭 향상
@@ -428,14 +437,6 @@ class FilteredShapeNetDataset(Dataset):
         intrinsics_scaled = intrinsics.clone()
         intrinsics_scaled[0, :] *= scale
         intrinsics_scaled[1, :] *= scale
-        
-        # Coordinate system rotation (ShapeNet specific)
-        rotation_matrix = torch.tensor([
-            [ 0,  1,  0,  0],
-            [-1,  0,  0,  0],
-            [ 0,  0,  1,  0],
-            [ 0,  0,  0,  1]
-        ], dtype=torch.float32)
 
         src_images = []
         src_poses = []
@@ -472,7 +473,7 @@ class FilteredShapeNetDataset(Dataset):
             
             pose_path = os.path.join(instance_dir, 'pose', f'{real_v_idx:06d}.txt')
             pose = CameraUtils.parse_pose(pose_path)
-            pose = torch.matmul(rotation_matrix, pose)
+            pose = torch.matmul(SHAPENET_ROTATION_MATRIX, pose)
             
             src_poses.append(pose)
             src_intrinsics_list.append(intrinsics_scaled)
@@ -483,7 +484,7 @@ class FilteredShapeNetDataset(Dataset):
         
         tgt_pose_path = os.path.join(instance_dir, 'pose', f'{real_tgt_idx:06d}.txt')
         tgt_pose = CameraUtils.parse_pose(tgt_pose_path)
-        tgt_pose = torch.matmul(rotation_matrix, tgt_pose)
+        tgt_pose = torch.matmul(SHAPENET_ROTATION_MATRIX, tgt_pose)
         
         return {
             'src_images': torch.stack(src_images, dim=0),

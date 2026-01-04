@@ -8,6 +8,7 @@ import numpy as np
 import imageio
 import glob
 import cv2
+import shutil
 from torchvision import transforms
 from tqdm import tqdm
 from PIL import Image
@@ -18,16 +19,11 @@ from config.config import Config
 from models.pixelnerf import PixelNeRF
 from utils.geometry import CameraUtils
 
+from data.shapenet import SHAPENET_ROTATION_MATRIX
+
 warnings.filterwarnings("ignore")
 sys.stdout.reconfigure(line_buffering=True)
 
-# 좌표계 변환 행렬
-ROTATION_MATRIX = torch.tensor([
-    [ 0,  1,  0,  0],
-    [-1,  0,  0,  0],
-    [ 0,  0,  1,  0],
-    [ 0,  0,  0,  1]
-], dtype=torch.float32)
 
 def parse_pose_file(path):
     with open(path, 'r') as f:
@@ -79,7 +75,7 @@ def load_data(folder_path, target_size, device='cuda'):
         img = Image.open(img_paths[i]).convert("RGB")
         src_images.append(transform(img))
         pose = parse_pose_file(pose_paths[i])
-        pose = torch.matmul(ROTATION_MATRIX, pose)
+        pose = torch.matmul(SHAPENET_ROTATION_MATRIX, pose)
         src_poses.append(pose)
         
         if use_per_view_intrinsic and i < len(intrinsic_paths):
@@ -274,7 +270,7 @@ class PixelNeRFInference:
             cam_pos = np.array([x, y, z]) + center
             pose = self.look_at(cam_pos, center, world_up)
             pose_tensor = torch.from_numpy(pose).float()
-            poses.append(torch.matmul(ROTATION_MATRIX, pose_tensor))
+            poses.append(torch.matmul(SHAPENET_ROTATION_MATRIX, pose_tensor))
             
         return torch.stack(poses).to(self.device)
 
@@ -332,30 +328,98 @@ class PixelNeRFInference:
                 imageio.imwrite(os.path.join(save_root, f"{i:06d}.png"), frame)
             print(f"✨ Views (Images) saved to: {save_root}")
 
+class DataPreprocessor:
+    def __init__(self, source_root, target_root, output_dir_name):
+        self.source_root = source_root
+        self.target_root = target_root
+        self.output_dir_name = output_dir_name
+
+    def _clean_and_setup_dirs(self):
+        if os.path.exists(self.target_root):
+            try:
+                shutil.rmtree(self.target_root)
+                print(f"🧹 Cleared: {self.target_root}")
+            except Exception as e:
+                print(f"❌ Error clearing directory: {e}")
+                return None
+        os.makedirs(self.target_root, exist_ok=True)
+        final_target_path = os.path.join(self.target_root, self.output_dir_name)
+        os.makedirs(final_target_path, exist_ok=True)
+        return final_target_path
+
+    def _get_elevation_from_pose(self, pose_path):
+        try:
+            with open(pose_path, 'r') as f: values = [float(x) for x in f.read().split()]
+            pose = np.array(values).reshape(4, 4)
+            loc = pose[:3, 3]
+            radius = np.linalg.norm(loc)
+            return 0.0 if radius < 1e-6 else np.degrees(np.arcsin(loc[2] / radius))
+        except Exception as e:
+            print(f"⚠️ Pose error {pose_path}: {e}")
+            return 999.0
+
+    def prepare_data(self, num_views=6, max_elevation=50.0, specific_obj_id=None):
+        dst_obj_path = self._clean_and_setup_dirs()
+        if dst_obj_path is None: return None, None
+        
+        if not os.path.exists(self.source_root):
+            print(f"❌ Source not found: {self.source_root}"); return None, None
+
+        if specific_obj_id:
+            obj_id = specific_obj_id
+            src_obj_path = os.path.join(self.source_root, obj_id)
+            if not os.path.exists(src_obj_path): print(f"❌ ID '{obj_id}' not found."); return None, None
+        else:
+            objects = [d for d in os.listdir(self.source_root) if os.path.isdir(os.path.join(self.source_root, d))]
+            if not objects: print("❌ No objects found."); return None, None
+            obj_id = random.choice(objects)
+            src_obj_path = os.path.join(self.source_root, obj_id)
+
+        all_indices = sorted([int(os.path.splitext(f)[0]) for f in os.listdir(os.path.join(src_obj_path, 'rgb')) if f.endswith(('.png', '.jpg'))])
+        valid_indices = [idx for idx in all_indices if abs(self._get_elevation_from_pose(os.path.join(src_obj_path, 'pose', f"{idx:06d}.txt"))) <= max_elevation]
+        
+        selected_indices = sorted(random.sample(valid_indices, min(len(valid_indices), num_views))) if len(valid_indices) >= num_views else valid_indices
+        
+        for subdir in ['rgb', 'pose', 'intrinsics']: os.makedirs(os.path.join(dst_obj_path, subdir), exist_ok=True)
+        if os.path.exists(os.path.join(src_obj_path, 'intrinsics.txt')): shutil.copy(os.path.join(src_obj_path, 'intrinsics.txt'), dst_obj_path)
+
+        for idx in selected_indices:
+            fname = f"{idx:06d}"
+            src_img = os.path.join(src_obj_path, 'rgb', f"{fname}.png")
+            if not os.path.exists(src_img): src_img = src_img.replace('.png', '.jpg')
+            if os.path.exists(src_img): shutil.copy(src_img, os.path.join(dst_obj_path, 'rgb', os.path.basename(src_img)))
+            
+            for t in ['pose', 'intrinsics']:
+                f_path = os.path.join(src_obj_path, t, f"{fname}.txt")
+                if os.path.exists(f_path): shutil.copy(f_path, os.path.join(dst_obj_path, t))
+        
+        print(f"✅ Data ready at: {dst_obj_path}")
+        return dst_obj_path, obj_id
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='config/default_config.yaml')
+    default_config_path = os.path.join(CURRENT_FILE_DIR, 'config', 'default_config.yaml')
+    parser.add_argument('--config', default=default_config_path)
     parser.add_argument('--input_folder', required=True)
     parser.add_argument('--checkpoint', default=None)
     parser.add_argument('--output_dir', default='outputs')
     parser.add_argument('--mode', default='video', choices=['video', 'views']) 
     parser.add_argument('--size', type=int, default=None)
+    parser.add_argument('--input_size', type=int, default=None)
     parser.add_argument('--num_frames', type=int, default=240) 
     parser.add_argument('--fps', type=int, default=None)
-    # [인자 추가] 외부에서 객체 ID를 받을 수 있게 설정
-    parser.add_argument('--obj_id', type=str, default=None, help='Original Object ID')  
+    parser.add_argument('--obj_id', type=str, default=None)
+    parser.add_argument('--n_fine', type=int, default=None)
     args = parser.parse_args()
     
-    run_kwargs = {
-        'render_size': args.size,
-        'num_frames': args.num_frames,
-        'mode': args.mode,
-        'fps': args.fps,
-        'obj_id': args.obj_id # ✅ 전달
-    }
-    
     config = Config.from_yaml(args.config)
-    PixelNeRFInference(config, args.checkpoint).run(args.input_folder, args.output_dir, **run_kwargs)
+    if args.n_fine is not None: config.model.n_fine = args.n_fine
+    
+    PixelNeRFInference(config, args.checkpoint).run(
+        args.input_folder, args.output_dir, 
+        render_size=args.size, input_size=args.input_size, 
+        num_frames=args.num_frames, mode=args.mode, fps=args.fps, obj_id=args.obj_id
+    )
 
 if __name__ == '__main__':
     main()
