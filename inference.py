@@ -14,8 +14,6 @@ from torchvision import transforms
 from tqdm import tqdm
 from PIL import Image
 
-sys.path.append(os.getcwd())
-
 from config.config import Config
 from models.pixelnerf import PixelNeRF
 from utils.geometry import CameraUtils
