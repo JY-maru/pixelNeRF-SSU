@@ -1,31 +1,31 @@
 # train.py
 """
-┌─────────────────────┐
+┌──────────────────────────────────────────┐
 │          Data Preprocessing              │
-├─────────────────────┤
+├──────────────────────────────────────────┤
 │ Source Images:                           │
-│   [0,1] → ImageNet Normalize → [-2,2]  │
+│   [0,1] → ImageNet Normalize → [-2,2]    │
 │   (For pretrained ResNet encoder)        │
 │                                          │
 │ Target Images:                           │
 │   [0,1] (NO normalization)               │
 │   (For supervision/comparison)           │
-└─────────────────────┘
+└──────────────────────────────────────────┘
                     ↓
-┌─────────────────────┐
+┌──────────────────────────────────────────┐
 │              Model Forward               │
-├─────────────────────┤
-│ Encoder(source_normalized) → features   │
-│ NeRF(features) → output [0,1]           │
-└─────────────────────┘
+├──────────────────────────────────────────┤
+│ Encoder(source_normalized) → features    │
+│ NeRF(features) → output [0,1]            │
+└──────────────────────────────────────────┘
                     ↓
-┌─────────────────────┐
+┌──────────────────────────────────────────┐
 │         Loss / Metrics / Save            │
-├─────────────────────┤
-│ Loss: MSE(output[0,1], target[0,1])      │
+├──────────────────────────────────────────┤
+│ Loss: MSE(output[0,1], target[0,1]) + .. │
 │ PSNR: -10*log10(MSE)                     │
-│ Save: output[0,1] → PNG                 │
-└─────────────────────┘
+│ Save: output[0,1] → PNG                  │
+└──────────────────────────────────────────┘
 """
 
 import os
@@ -1786,4 +1786,5 @@ def main():
     trainer.train()
 
 if __name__ == '__main__':
+
     main()
