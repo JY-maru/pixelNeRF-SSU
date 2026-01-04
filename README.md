@@ -155,9 +155,11 @@ inst_id/
 
 최종 픽셀의 색상 $\hat{C}$는 광선(Ray) 상의 모든 샘플 포인트의 기여도를 합산하여 계산됩니다.
 
+
 $$
 \hat{C} = \sum_{i} \underbrace{T_i}_{\text{도달 확률}} \cdot \underbrace{(1 - e^{-\sigma_i \delta_i})}_{\text{현재 구간의 불투명도}} \cdot \underbrace{c_i}_{\text{색상}}
 $$
+
 
 * **$T_i$ (도달 확률):** 광선이 $i$번째 지점까지 장애물 없이 도달할 확률 (Transmittance).
 * **$(1 - e^{-\sigma_i \delta_i})$ (불투명도):** 해당 구간($\delta_i$)에서 입자가 존재하여 광선이 부딪힐 확률.
