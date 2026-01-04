@@ -118,7 +118,7 @@ inst_id/
 기존 ResNet의 단일 레이어 특징맵만 사용할 경우 발생하는 정보 손실을 막기 위해 **FPN(Feature Pyramid Network)**을 도입했습니다.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-2.encoder%28FPN%29.jpg" alt="FPN Structure" width="800">
+  <img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-2.encoder_FPN.jpg" alt="FPN Structure" width="800">
 </p>
 
 * **구조:** ResNet Backbone을 통해 4가지 해상도의 특징맵과 원본 RGB를 추출합니다.
