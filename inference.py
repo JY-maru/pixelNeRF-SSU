@@ -328,6 +328,12 @@ class PixelNeRFInference:
                 imageio.imwrite(os.path.join(save_root, f"{i:06d}.png"), frame)
             print(f"✨ Views (Images) saved to: {save_root}")
 
+CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(CURRENT_FILE_DIR)
+
+warnings.filterwarnings("ignore")
+sys.stdout.reconfigure(line_buffering=True)
+
 class DataPreprocessor:
     def __init__(self, source_root, target_root, output_dir_name):
         self.source_root = source_root
