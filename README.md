@@ -118,7 +118,7 @@ inst_id/
 기존 ResNet의 단일 레이어 특징맵만 사용할 경우 발생하는 정보 손실을 막기 위해 **FPN(Feature Pyramid Network)**을 도입했습니다.
 
 <p align="center">
-  <img src="/images/1-2.encoder_FPN.jpg" alt="FPN structure" width="800">
+  <img src="/images/1-2.encoder_FPN_.jpg" alt="FPN structure" width="800">
 </p>
 
 
