@@ -1,23 +1,18 @@
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
-
+.gitattributes
 
 *.pth
 *.pt
 *.ckpt
+
 cache/
-
-outputs/
-results/
-logs/
 checkpoints/
+debug_projections/
+outputs/
+logs/
 
-# 5. 미디어 파일 및 기타 잡동사니
-*.png
-*.jpg
-*.jpeg
-*.mp4
-*.gvid
-fetch2local.sh
+dataloader_setting.ipynb
 prebuild_index.sh
+
