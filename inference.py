@@ -340,7 +340,7 @@ class DataPreprocessor:
         if os.path.exists(self.target_root):
             try:
                 shutil.rmtree(self.target_root)
-                print(f"🧹 Cleared: {self.target_root}")
+                print(f" [ Cleared ] : {self.target_root}")
             except Exception as e:
                 print(f"❌ Error clearing directory: {e}")
                 return None
