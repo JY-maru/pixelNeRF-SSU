@@ -1,6 +1,6 @@
 # Pixel-NeRF: Multi-View Stereo Enhanced (in Colab)
 
-본 프로젝트는 **Pixel-NeRF**(Yu et al., 2021)의 아키텍처를 기반으로, **Multi-View Stereo (MVS)** 개념(Variance 기반 정합성 판단)과 **FPN(Feature Pyramid Network)**을 도입하여 학습 효율과 기하학적 정확도를 극대화한 구현체입니다.
+본 프로젝트는 **Pixel-NeRF** (Yu et al., 2021)의 아키텍처를 기반으로, **Multi-View Stereo (MVS)** 개념(Variance 기반 정합성 판단)과 **FPN(Feature Pyramid Network)**을 도입하여 학습 효율과 기하학적 정확도를 극대화한 구현체입니다.
 
 Colab 환경(A100 권장)에서 약 30시간의 학습만으로 ShapeNet 차량 데이터셋에 대해 고품질의 3D 형상을 복원할 수 있도록 설계하였습니다. 적은 수의 Input 이미지로도 새로운 시점(Novel View)을 합성할 수 있는 Pixel-NeRF의 장점을 극대화하여, **자율주행 및 CV 분야의 차량 데이터 증강(Data Augmentation)** 파이프라인으로 활용할 수 있습니다.
 
