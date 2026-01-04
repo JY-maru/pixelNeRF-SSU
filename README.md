@@ -9,7 +9,7 @@ Colab 환경(A100 권장)에서 약 30시간의 학습만으로 ShapeNet 차량 
 ## 🎥 Demo Results
 
 <p align="center">
-  <img src="imgaes/rendering_demo.gif" alt="Demo Results" width="600">
+  <img src="images/rendering_demo.gif" alt="Demo Results" width="600">
 </p>
 
 <br>
