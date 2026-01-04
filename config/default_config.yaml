@@ -1,8 +1,8 @@
 # config/default_config.yaml
 data:
   data_root: "/content/pixNeRF_shapeNet_v2_data"
-  num_source_views: 6
-  image_size: [128, 128]
+  num_source_views: 4
+  image_size: [256, 256]
   z_near: 0.1
   z_far: 3.0
   use_imagenet_normalize: true
@@ -13,7 +13,7 @@ data:
   min_camera_distance: 1.0         # 최소 거리 (같은 view 제외)
   max_camera_distance: 2.0
   min_elevation: 5.0              # 바닥면 제거 (도 단위)
-  max_elevation: 75.0             # 정수리 제거 (도 단위)
+  max_elevation: 50.0             # 정수리 제거 (도 단위)
   
   # Training
   num_train_instances: 10000    
@@ -26,7 +26,7 @@ data:
   num_test_instances: 10000        # 3개 (unseen)
   
 model:
-  encoder_type: "resnet50" 
+  encoder_type: "resnet34" 
   encoder_pretrained: true
   feature_dim: 512
   d_hidden: 256
@@ -76,17 +76,17 @@ scheduler:
 
 
 inference:
-  checkpoint_path: "./checkpoints/checkpoint_epoch_125.pth"
+  checkpoint_path: "./checkpoints/best_model_256.pth"
   output_dir: "./outputs"
   video_fps: 30
-  chunk_size: 2048
+  chunk_size: 1024
 
 tto:
   enabled: true             # 실행 시 TTO 수행 여부
   num_steps: 500            # 최적화 스텝 수
   learning_rate: 0.00001    # 1e-5
   batch_rays: 512           # 배치당 레이 수
-  image_size: [128, 128]    # TTO용 고해상도 이미지 크기
+  image_size: [256, 256]    # TTO용 고해상도 이미지 크기
   
 debug:
   enabled: false              # Debug mode on/off

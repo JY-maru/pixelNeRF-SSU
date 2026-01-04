@@ -9,6 +9,7 @@ import imageio
 import glob
 import cv2
 import shutil
+import random
 from torchvision import transforms
 from tqdm import tqdm
 from PIL import Image
@@ -20,9 +21,6 @@ from models.pixelnerf import PixelNeRF
 from utils.geometry import CameraUtils
 
 from data.shapenet import SHAPENET_ROTATION_MATRIX
-
-warnings.filterwarnings("ignore")
-sys.stdout.reconfigure(line_buffering=True)
 
 
 def parse_pose_file(path):
@@ -328,11 +326,11 @@ class PixelNeRFInference:
                 imageio.imwrite(os.path.join(save_root, f"{i:06d}.png"), frame)
             print(f"✨ Views (Images) saved to: {save_root}")
 
+
 CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURRENT_FILE_DIR)
 
 warnings.filterwarnings("ignore")
-sys.stdout.reconfigure(line_buffering=True)
 
 class DataPreprocessor:
     def __init__(self, source_root, target_root, output_dir_name):
