@@ -170,7 +170,7 @@ $$
 렌더링된 이미지는 Ground Truth(GT) 이미지와 비교되어 학습됩니다.
 
 <p align="center">
-  <img src="/images/1-5.pred_GT.jpg" alt="Training and Loss" width="600">
+  <img src="/images/1-5.pred_GT.jpg" alt="Training and Loss" width="800">
 </p>
 
 * **Coarse Pass:** 전체 영역을 균일하게 샘플링하여 대략적인 형상을 파악.
@@ -204,19 +204,30 @@ $$
 ```bash
 # Colab 셀에서 실행
 !bash fetch2local.sh -from nerf-data-ssu/shapeNetV2_cars
-
+```
 
 ### 2. Training
 최초 실행 시 기하학적 필터링을 위한 캐시(.pt) 생성으로 인해 시작에 약 5~10분이 소요될 수 있습니다. (학습 시 A100 권장)
+```bash
  python train.py --config config/default_config.yaml
+```
 
 ### 3. Inference (Video Generation)
-python inference.py --input_folder ./data/cars_test/object_id \
-                    --checkpoint checkpoints/best_model.pth \
-                    --mode video \
-                    --num_frames 90
+- `infer.ipynb`에서 확인 가능. 
+```bash
+!python -u inference.py --input_folder <INPUT_ROOT> \
+                        --mode video \
+                        --output_dir ./outputs \
+                        --size 256 \
+                        --num_frames 120 \
+                        --obj_id <selected_obj_id> \
+                        --n_fine 256
+```
 
-***
+<br>
+
+---
+
 
 Acknowledgement
 This project builds upon Pixel-NeRF. We optimized it for constrained environments by introducing FPN encoders, Variance-based feature aggregation, and Geometric data pruning.
