@@ -45,7 +45,7 @@ Colab 환경(A100 권장)에서 약 30시간의 학습만으로 ShapeNet 차량 
 ```text
 pixelNeRF-SSU/
 ├── config/               # Model 파라미터 설정 파일 (.yaml)
-├── data/ 		  # ShapeNet 데이터 로더 및 필터링 로직
+├── data/ 		            # 데이터 로더 및 필터링 로직
 ├── model/                # PixelNeRF, encoder 모듈 소스 코드
 ├── utils/                # Projection, 렌더링 관련 유틸리티 함수
 ├── train.py              # 학습용 소스코드 
