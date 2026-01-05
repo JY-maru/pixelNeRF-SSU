@@ -1,4 +1,5 @@
-# Pixel-NeRF: Multi-View Stereo Enhanced (in Colab)
+# Pixel-NeRF: Multi-View Stereo Enhanced
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JY-maru/pixelNeRF-SSU/blob/main/run.ipynb)
 
 본 프로젝트는 **Pixel-NeRF** (Yu et al., 2021)의 아키텍처를 기반으로, Multi-View Stereo(MVS) 개념(Variance 기반 정합성 판단)과 FPN(Feature Pyramid Network)을 도입하여 학습 효율과 기하학적 정확도를 극대화한 구현체입니다.
 
@@ -39,13 +40,25 @@ Colab 환경(A100 권장)에서 약 30시간의 학습만으로 ShapeNet 차량 
 <br>
 
 ---
+## 📂 Project Structure
+
+```text
+pixelNeRF-SSU/
+├── config/              # Model 파라미터 설정 파일 (.yaml)
+├── data/ 		  # ShapeNet 데이터 로더 및 필터링 로직
+├── model/              # PixelNeRF, encoder 모듈 소스 코드
+├── utils/                 # Projection, 렌더링 관련 유틸리티 함수
+├── run.py           	  # Main 학습용 소스코드 
+├── inference.py        # novel-views 및 비디오 생성과 같은 추론용 소스코드 
+└── fetch2local.sh      # google 스토리지 데이터 다운로드 스크립트
+```
 
 ## 📂 Dataset Details
 
-본 프로젝트는 3D 객체 인식 및 복원 분야의 표준 벤치마크인 **ShapeNet Core V2** 데이터셋을 기반으로 합니다. 자율주행 환경 시뮬레이션이라는 목적에 맞춰, **Cars (Synset ID: 02958343)** 카테고리를 선별하여 학습을 진행합니다.
+본 프로젝트는 3D 객체 인식 및 복원 분야의 표준 벤치마크인 **ShapeNet Core V2** 데이터셋을 기반으로 합니다. 자율주행 환경 시뮬레이션이라는 목적에 맞춰, **Cars ** 카테고리를 선별하여 학습을 진행합니다.
 
 * **Dataset Source:** ShapeNet Core V2 (Cars Category)
-* **Target Object:** Vehicles (02958343)
+* **Target Object:** Vehicles 
 * **Data Format:** 각 3D 객체(Mesh)에 대해 사전 렌더링된 다각도 RGB 이미지와 Camera Pose 정보가 포함된 데이터를 사용합니다.
 
 - 데이터 구조 예시
@@ -105,6 +118,11 @@ inst_id/
 -0.5042614340782166 -0.37587812542915344 0.7774547934532166 -1.0106911659240723 -0.8635510206222534 0.21949009597301483 -0.4539864957332611 0.5901824235916138 -5.960464477539063e-08 -0.9002998471260071 -0.43527036905288696 0.5658514499664307 0.0 0.0 -0.0 1.0
 ```
 
+- 데이터 fetch
+```bash
+!bash fetch2local.sh -from nerf-data-ssu/shapeNetV2_cars
+```
+google storage의 버킷에서 데이터를 바로 가져옵니다.
 
 <br>
 
@@ -208,15 +226,28 @@ $$
 
 ### 2. Training
 최초 실행 시 기하학적 필터링을 위한 캐시(.pt) 생성으로 인해 시작에 약 5~10분이 소요될 수 있습니다. (학습 시 A100 권장)
+```markdown
+> **Argv Guide**
+> - `config/default_config.yaml` 파일에서 주요 학습 파라미터를 수정할 수 있습니다.
+> - `-- resume` : 설정한 가중치부터 학습 재개
+> - `-- config`: 지정한 config파일로 학습 [DEFAULT] config/default_config.yaml
+```
+
 ```bash
  python train.py --config config/default_config.yaml
 ```
 
 ### 3. Inference (Video Generation)
-- `infer.ipynb`에서 확인 가능. 
+```markdown
+> **Argv Guide**
+> - `--mode` : views(novel-veiws 생성) or video(360도 view에 대한 영상)
+> - `--size`: 모델 해상도 지정 (config의 학습된 가중치 해상도와 일치 필요)
+> - `--num_frames`: 생성 이미지 수 
+```
+
 ```bash
 !python -u inference.py --input_folder <INPUT_ROOT> \
-                        --mode video \
+                        --mode video \					
                         --output_dir ./outputs \
                         --size 256 \
                         --num_frames 120 \
@@ -229,5 +260,19 @@ $$
 ---
 
 
-Acknowledgement
-This project builds upon Pixel-NeRF. We optimized it for constrained environments by introducing FPN encoders, Variance-based feature aggregation, and Geometric data pruning.
+## 📜 Acknowledgement & Citation
+
+This project builds upon the official implementation of **Pixel-NeRF**. We optimized it for constrained environments (Colab) by introducing FPN encoders, Variance-based feature aggregation, and Geometric data pruning.
+
+If you use this code for your research, please cite the original Pixel-NeRF paper:
+
+```bibtex
+@inproceedings{yu2021pixelnerf,
+  title={pixelNeRF: Neural Radiance Fields from One or Few Images},
+  author={Yu, Alex and Ye, Vickie and Tancik, Matthew and Kanazawa, Angjoo},
+  booktitle={CVPR},
+  year={2021}
+}
+
+> License
+This project is released under the MIT License.
