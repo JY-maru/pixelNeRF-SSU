@@ -226,24 +226,23 @@ $$
 
 ### 2. Training
 최초 실행 시 기하학적 필터링을 위한 캐시(.pt) 생성으로 인해 시작에 약 5~10분이 소요될 수 있습니다. (학습 시 A100 권장)
-```markdown
+
 > **Argv Guide**
-> - `config/default_config.yaml` 파일에서 주요 학습 파라미터를 수정할 수 있습니다.
-> - `-- resume` : 설정한 가중치부터 학습 재개
-> - `-- config`: 지정한 config파일로 학습 [DEFAULT] config/default_config.yaml
-```
+ - `config/default_config.yaml` 파일에서 주요 학습 파라미터를 수정할 수 있습니다.
+ - `-- resume` : 설정한 가중치부터 학습 재개
+ - `-- config`: 지정한 config파일로 학습 (\[DEFAULT\] config/default_config.yaml)
+
 
 ```bash
  python train.py --config config/default_config.yaml
 ```
 
 ### 3. Inference (Video Generation)
-```markdown
+
 > **Argv Guide**
-> - `--mode` : views(novel-veiws 생성) or video(360도 view에 대한 영상)
-> - `--size`: 모델 해상도 지정 (config의 학습된 가중치 해상도와 일치 필요)
-> - `--num_frames`: 생성 이미지 수 
-```
+ - `--mode` : views(novel-veiws 생성) or video(360도 view에 대한 영상)
+ - `--size`: 모델 해상도 지정 (config의 학습된 가중치 해상도와 일치 필요)
+- `--num_frames`: 생성 이미지 수 
 
 ```bash
 !python -u inference.py --input_folder <INPUT_ROOT> \
@@ -262,7 +261,7 @@ $$
 
 ## 📜 Acknowledgement & Citation
 
-This project builds upon the official implementation of **Pixel-NeRF**. We optimized it for constrained environments (Colab) by introducing FPN encoders, Variance-based feature aggregation, and Geometric data pruning.
+This project builds upon the official implementation of [PixelNeRF](https://github.com/sxyu/pixel-nerf) . We optimized it for constrained environments (Colab) by introducing FPN encoders, Variance-based feature aggregation, and Geometric data pruning.
 
 If you use this code for your research, please cite the original Pixel-NeRF paper:
 
