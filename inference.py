@@ -20,6 +20,13 @@ from utils.geometry import CameraUtils
 
 from data.shapenet import SHAPENET_ROTATION_MATRIX
 
+from PIL import Image as PILImage
+from IPython.display import clear_output # 화면 갱신용
+try:
+    from google.colab.patches import cv2_imshow # Colab 이미지 출력용
+    IS_COLAB = True
+except ImportError:
+    IS_COLAB = False
 
 def parse_pose_file(path):
     with open(path, 'r') as f:
@@ -150,6 +157,10 @@ class PixelNeRFInference:
         mse2psnr = lambda x : -10. * torch.log(x) / torch.log(torch.Tensor([10.]).to(self.device))
         pbar = tqdm(range(steps), desc="    Optimizing", leave=True, file=sys.stdout)
         
+        # [수정 1] 누적 변수 초기화
+        running_loss = 0.0
+        log_interval = 10
+        
         for step in pbar:
             img_idx = np.random.randint(0, N)
             select_inds = torch.randperm(H * W, device=self.device)[:batch_rays]
@@ -164,22 +175,29 @@ class PixelNeRFInference:
             
             out = self.model(norm_images.unsqueeze(0), intrinsics.unsqueeze(0), poses.unsqueeze(0), rays_o, rays_d, z_near=self.config.data.z_near, z_far=self.config.data.z_far)
             
-            # === [Loss 계산: train.py 로직 적용] ===
-            
-            # 1. MSE Loss (기본 화질)
             mse_loss = F.mse_loss(out['fine']['rgb_map'].squeeze(0), target_rgb)
-            
             loss = mse_loss 
-            # ========================================
             
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            # [수정 2] Loss 누적
+            running_loss += loss.item()
             
-            if step % 10 == 0:
+            # [수정 3] 지정된 간격(10)마다 평균 계산 및 출력
+            if (step + 1) % log_interval == 0:
                 with torch.no_grad():
-                    psnr = mse2psnr(mse_loss) # PSNR은 순수 화질(MSE)로만 표기
-                    pbar.set_description(f"   Optimizing | Loss: {loss.item():.4f} | PSNR: {psnr.item():.2f} dB")
+                    # 지난 10스텝의 평균 Loss 계산
+                    avg_loss = running_loss / log_interval
+                    
+                    # 평균 Loss를 기반으로 PSNR 계산 (더 안정적임)
+                    avg_psnr = mse2psnr(torch.tensor(avg_loss)) 
+                    
+                    pbar.set_description(f"   Optimizing [ Avg Loss: {avg_loss:.4f} | Avg PSNR: {avg_psnr.item():.2f} dB ] ")
+                    
+                    # 누적 변수 초기화 (다음 10스텝을 위해)
+                    running_loss = 0.0
                     
         print("[TTO] Finished!")
         self.model.eval()
@@ -191,52 +209,65 @@ class PixelNeRFInference:
         src_intrinsics = src_data['src_intrinsics'].unsqueeze(0)
         
         chunk_size = getattr(self.config.inference, 'chunk_size', 4096)
-        if H > 256: chunk_size = 1024 
+        if H > 256: chunk_size = 2048 
 
         z_near = self.config.data.z_near
         z_far = self.config.data.z_far
 
-        for pose in tqdm(tgt_poses, desc=desc, file=sys.stdout, ncols=100):
-            rays_o, rays_d = CameraUtils.get_rays(H, W, tgt_intrinsic, pose)
-            rays_o = rays_o.reshape(-1, 3).unsqueeze(0) 
-            rays_d = rays_d.reshape(-1, 3).unsqueeze(0)
+        total_frames = len(tgt_poses)
+        
+        custom_format = "{desc}{percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}{postfix}]"
+
+        with tqdm(total=total_frames, 
+                  unit="view", 
+                  file=sys.stdout,
+                  ncols=70, 
+                  bar_format=custom_format 
+                  ) as pbar:
             
-            rgb_chunks = []
-            acc_chunks = []
-            
-            for i in range(0, rays_o.shape[1], chunk_size):
-                chunk_o = rays_o[:, i:i+chunk_size]
-                chunk_d = rays_d[:, i:i+chunk_size]
-                with torch.no_grad():
-                    out = self.model(src_images, src_intrinsics, src_poses, chunk_o, chunk_d, z_near, z_far)
+            # [수정] 처음에 한 번만 설명을 설정 (반복문 밖으로 빼도 되지만, 초기화를 위해 여기서 설정)
+            pbar.set_description("  Views ") 
+
+            for pose_idx, pose in enumerate(tgt_poses):
                 
-                rgb_chunks.append(out['fine']['rgb_map'].cpu())
-                acc_chunks.append(out['fine']['acc_map'].cpu())
-            
-            # 1. 텐서 합치기
-            pred_rgb = torch.cat(rgb_chunks, dim=1).reshape(H, W, 3)
-            pred_acc = torch.cat(acc_chunks, dim=1).reshape(H, W, 1)
-            
-            # ==============================================================
-            # [복구] 표준 화이트 배경 처리 (Alpha Blending)
-            # ==============================================================
-            # Hard Masking(잘라내기)을 제거하고, NeRF의 표준 공식으로 돌아갑니다.
-            # 공식: 결과색 = 객체색 + (1 - 투명도) * 흰색
-            
-            # 1. 배경이 투명할수록(acc가 낮을수록) 흰색(1.0)을 더합니다.
-            # 2. 부드럽게 그라데이션되므로 끊기는 아티팩트가 사라집니다.
-            RGB_WHITHE = 1.0
-            pred_img = pred_rgb + (1.0 - pred_acc) * RGB_WHITHE
-            
-            # ==============================================================
-            
-            # 3. 값 클램핑 및 변환
-            pred_img = torch.clamp(pred_img, 0, 1).numpy()
-            pred_img_uint8 = (pred_img * 255).astype(np.uint8)
-            
-            frames.append(pred_img_uint8)
-            torch.cuda.empty_cache()
-            
+                rays_o, rays_d = CameraUtils.get_rays(H, W, tgt_intrinsic, pose)
+                rays_o = rays_o.reshape(-1, 3).unsqueeze(0) 
+                rays_d = rays_d.reshape(-1, 3).unsqueeze(0)
+                
+                total_rays = rays_o.shape[1]
+                total_chunks = (total_rays + chunk_size - 1) // chunk_size
+
+                rgb_chunks = []
+                acc_chunks = []
+                
+                for chunk_idx, i in enumerate(range(0, total_rays, chunk_size)):
+                    
+                    # 픽셀 처리 진행상황만 옆에 띄움
+                    pbar.set_postfix_str(f"Px: {chunk_idx+1}/{total_chunks}", refresh=True)
+                    
+                    chunk_o = rays_o[:, i:i+chunk_size]
+                    chunk_d = rays_d[:, i:i+chunk_size]
+                    
+                    with torch.no_grad():
+                        out = self.model(src_images, src_intrinsics, src_poses, chunk_o, chunk_d, z_near, z_far)
+                    
+                    curr_rgb = out['fine']['rgb_map'].cpu().reshape(-1, 3)
+                    curr_acc = out['fine']['acc_map'].cpu().reshape(-1, 1)
+
+                    rgb_chunks.append(curr_rgb)
+                    acc_chunks.append(curr_acc)
+                
+                pred_rgb = torch.cat(rgb_chunks, dim=0).reshape(H, W, 3)
+                pred_acc = torch.cat(acc_chunks, dim=0).reshape(H, W, 1)
+                pred_img = pred_rgb + (1.0 - pred_acc) * 1.0
+                pred_img = torch.clamp(pred_img, 0, 1).numpy()
+                pred_img_uint8 = (pred_img * 255).astype(np.uint8)
+                
+                frames.append(pred_img_uint8)
+                torch.cuda.empty_cache()
+
+                pbar.update(1)
+                
         return frames
 
     def look_at(self, eye, center, up):
@@ -376,6 +407,8 @@ class DataPreprocessor:
             if not objects: print("❌ No objects found."); return None, None
             obj_id = random.choice(objects)
             src_obj_path = os.path.join(self.source_root, obj_id)
+
+        print(f" [ Object ID ] : {obj_id}")
 
         all_indices = sorted([int(os.path.splitext(f)[0]) for f in os.listdir(os.path.join(src_obj_path, 'rgb')) if f.endswith(('.png', '.jpg'))])
         valid_indices = [idx for idx in all_indices if abs(self._get_elevation_from_pose(os.path.join(src_obj_path, 'pose', f"{idx:06d}.txt"))) <= max_elevation]

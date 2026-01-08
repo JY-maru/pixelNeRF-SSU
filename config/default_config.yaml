@@ -82,7 +82,7 @@ inference:
   chunk_size: 1024
 
 tto:
-  enabled: true             # 실행 시 TTO 수행 여부
+  enabled: ture             # 실행 시 TTO 수행 여부
   num_steps: 500            # 최적화 스텝 수
   learning_rate: 0.00001    # 1e-5
   batch_rays: 512           # 배치당 레이 수
