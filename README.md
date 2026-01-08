@@ -10,7 +10,7 @@ Colab 환경에서 약 30시간의 학습만으로 ShapeNet 차량 데이터셋�
 ## 🎥 Demo Results
 
 <p align="center">
-  <img src="images/rendering_demo.gif" alt="Demo Results" width="600">
+  <img src="images/rendering_demo.gif" alt="Demo Results" width="800">
 </p>
 
 <br>
