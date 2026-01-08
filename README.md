@@ -55,7 +55,7 @@ pixelNeRF-SSU/
 
 ## 📂 Dataset Details
 
-본 프로젝트는 3D 객체 인식 및 복원 분야의 표준 벤치마크인 **ShapeNet Core V2** 데이터셋을 기반으로 합니다. 자율주행 환경 시뮬레이션이라는 목적에 맞춰, **Cars ** 카테고리를 선별하여 학습을 진행합니다.
+본 프로젝트는 3D 객체 인식 및 복원 분야의 표준 벤치마크인 **ShapeNet Core V2** 데이터셋을 기반으로 합니다. 자율주행 환경 시뮬레이션이라는 목적에 맞춰, Cars 카테고리를 선별하여 학습을 진행합니다.
 
 * **Dataset Source:** ShapeNet Core V2 (Cars Category)
 * **Target Object:** Vehicles 
@@ -122,7 +122,7 @@ inst_id/
 ```bash
 !bash fetch2local.sh -from nerf-data-ssu/shapeNetV2_cars
 ```
-google storage의 버킷에서 데이터를 바로 가져옵니다.
+google storage의 버킷에서 데이터를 로드합니다.
 
 <br>
 
