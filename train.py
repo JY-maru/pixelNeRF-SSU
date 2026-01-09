@@ -140,7 +140,7 @@ class Trainer:
         tqdm.write(f"Using device: {self.device}")
         
         if config.debug.enabled:
-            tqdm.write(f"\n🐛 Debug Configuration:")
+            tqdm.write(f"\n[ Debug Configuration ]")
             tqdm.write(f"   Mode: ENABLED")
             tqdm.write(f"   Log first batch: {config.debug.log_first_batch}")
             tqdm.write(f"   Log every N steps: {config.debug.log_every_n_steps}")
@@ -361,31 +361,31 @@ class Trainer:
     def _print_dataset_statistics(self):
         """Print detailed dataset statistics at the start of training"""
         print(f"\n{'='*70}")
-        print(f"📊 DATASET STATISTICS")
+        print(f"▢ DATASET STATISTICS")
         print(f"{'='*70}")
         
         # Helper function
         def print_view_stats(dataset, dataset_name):
-            # ✅ 여러 속성 체크
+            # 여러 속성 체크
             view_counts = []
             
             if hasattr(dataset, 'sample_view_counts'):
                 view_counts = list(dataset.sample_view_counts.values())
                 print(f"\n{dataset_name}:")
-                print(f"   📌 Using sample_view_counts")
+                print(f"   → Using sample_view_counts")
             elif hasattr(dataset, 'instance_view_counts'):
                 view_counts = list(dataset.instance_view_counts.values())
                 print(f"\n{dataset_name}:")
-                print(f"   📌 Using instance_view_counts")
+                print(f"   → Using instance_view_counts")
             else:
                 print(f"\n{dataset_name}:")
-                print(f"   ⚠️  No view count data available")
+                print(f"   [!]  No view count data available")
                 print(f"   Total samples: {len(dataset)}")
                 return
             
-            # ✅ Empty check
+            #  Empty check
             if len(view_counts) == 0:
-                print(f"   ⚠️  No valid instances found!")
+                print(f"   [!]  No valid instances found!")
                 print(f"   Total samples: {len(dataset)}")
                 if hasattr(dataset, 'valid_indices'):
                     print(f"   Valid indices: {len(dataset.valid_indices)}")
@@ -405,7 +405,7 @@ class Trainer:
             
             # Distribution
             if len(view_counts) > 0:
-                print(f"\n   📊 View Count Distribution:")
+                print(f"\n▢' View Count Distribution:")
                 bins = [0, 3, 6, 9, 12, 15, 100]
                 bin_labels = ['0-2', '3-5', '6-8', '9-11', '12-14', '15+']
                 hist, _ = np.histogram(view_counts, bins=bins)
@@ -417,12 +417,12 @@ class Trainer:
                         print(f"      {label:>6} views: {count:>3} instances ({pct:>5.1f}%) {bar}")
         
         # Train dataset
-        print_view_stats(self.train_dataset, "🚂 Training Dataset")
+        print_view_stats(self.train_dataset, "[ Training Dataset ]")
         if hasattr(self, 'train_loader'):
             print(f"   Batches per epoch:   {len(self.train_loader)}")
         
         # Val dataset
-        print_view_stats(self.val_dataset, "✅ Validation Dataset")
+        print_view_stats(self.val_dataset, "[ Validation Dataset ]")
         
         print(f"{'='*70}\n")
 
@@ -493,7 +493,7 @@ class Trainer:
     def _print_debug_header(self):
         """tqdm.write debug header"""
         tqdm.write(f"\n{'='*70}")
-        tqdm.write(f"🐛 DEBUG MODE - First Batch of Epoch {self.epoch+1}")
+        tqdm.write(f"[ DEBUG MODE ] - First Batch of Epoch {self.epoch+1}")
         tqdm.write(f"{'='*70}")
 
 
@@ -525,7 +525,7 @@ class Trainer:
         
         IMPORTANT: Rays are in WORLD space!
         """
-        # ✅ Config에서 fg_sampling_ratio 가져오기
+        # Config에서 fg_sampling_ratio 가져오기
         fg_ratio = getattr(self.config.training, 'fg_sampling_ratio', 0.8)
         fg_threshold = getattr(self.config.training, 'fg_threshold', 0.05)
         num_rays = self.config.training.num_rays_per_batch
@@ -553,7 +553,7 @@ class Trainer:
             device = rays_o.device
 
             if debug and i == 0:
-                tqdm.write(f"\n🔍 Ray Sampling Debug (Batch {i}):")
+                tqdm.write(f"\n▢ Ray Sampling Debug (Batch {i}):")
                 tqdm.write(f"  Target pose (w2c):\n{data['tgt_pose'][i]}")
                 tqdm.write(f"  Target pose (c2w):\n{tgt_pose_c2w}")
                 rays_o_flat = rays_o.reshape(-1, 3)
@@ -602,13 +602,13 @@ class Trainer:
             total_bg_sampled += n_bg_sampled
             
             if debug and i == 0:
-                tqdm.write(f"\n  🎲 Ray Sampling (Image {i}):")
+                tqdm.write(f"\n  ▢ Ray Sampling (Image {i}):")
                 tqdm.write(f"    Target: {num_fg} FG rays + {num_bg} BG rays = {num_rays} total")
                 tqdm.write(f"    Sampled: {n_fg_sampled} FG rays + {n_bg_sampled} BG rays")
                 if n_fg_sampled < num_fg:
-                    tqdm.write(f"    ⚠️  FG shortage: {num_fg - n_fg_sampled} rays (not enough FG pixels)")
+                    tqdm.write(f"    [!]  FG shortage: {num_fg - n_fg_sampled} rays (not enough FG pixels)")
                 if n_bg_sampled < num_bg:
-                    tqdm.write(f"    ⚠️  BG shortage: {num_bg - n_bg_sampled} rays (not enough BG pixels)")
+                    tqdm.write(f"    [!]  BG shortage: {num_bg - n_bg_sampled} rays (not enough BG pixels)")
             
             # Combine
             select_coords = torch.cat([fg_sample_coords, bg_sample_coords], dim=0)
@@ -617,7 +617,7 @@ class Trainer:
             if len(select_coords) < num_rays:
                 shortage = num_rays - len(select_coords)
                 if debug and i == 0:
-                    tqdm.write(f"    📦 Filling {shortage} rays with random sampling...")
+                    tqdm.write(f"    ▢ Filling {shortage} rays with random sampling...")
                 
                 all_coords = torch.stack(
                     torch.meshgrid(
@@ -639,7 +639,7 @@ class Trainer:
             tgt_rgb_list.append(tgt_img[:, select_coords[:, 0], select_coords[:, 1]].T)
         
         if debug:
-            tqdm.write(f"\n  📈 Overall Statistics:")
+            tqdm.write(f"\n  ▢ Overall Statistics:")
             tqdm.write(f"    Total FG pixels: {total_fg_pixels} ({total_fg_pixels/(data['B']*H*W)*100:.1f}%)")
             tqdm.write(f"    Total BG pixels: {total_bg_pixels} ({total_bg_pixels/(data['B']*H*W)*100:.1f}%)")
             tqdm.write(f"    Total FG rays sampled: {total_fg_sampled} ({total_fg_sampled/(data['B']*num_rays)*100:.1f}%)")
@@ -709,17 +709,17 @@ class Trainer:
                 traceback.print_exc()
             raise
         
-        # ✅ COMPREHENSIVE OUTPUT ANALYSIS
+        # COMPREHENSIVE OUTPUT ANALYSIS
         if self.global_step % self.step_debug == 0:
             with torch.no_grad():
-                tqdm.write(f"\n2️⃣ Network Output Analysis:")
+                tqdm.write(f"\n[ Network Output Analysis ]")
                 
                 # Coarse network
                 coarse_rgb = outputs['coarse']['rgb_map'][0]  # (N_rays, 3)
                 coarse_acc = outputs['coarse']['acc_map'][0]  # (N_rays,)
                 coarse_depth = outputs['coarse']['depth_map'][0]  # (N_rays,)
                 
-                tqdm.write(f"\n   📊 Coarse Network:")
+                tqdm.write(f"\n   ▢ Coarse Network:")
                 tqdm.write(f"   RGB output:")
                 tqdm.write(f"     R: mean={coarse_rgb[:, 0].mean():.3f}, std={coarse_rgb[:, 0].std():.3f}")
                 tqdm.write(f"     G: mean={coarse_rgb[:, 1].mean():.3f}, std={coarse_rgb[:, 1].std():.3f}")
@@ -731,11 +731,11 @@ class Trainer:
                 r_b_diff = (coarse_rgb[:, 0] - coarse_rgb[:, 2]).abs().mean()
                 
                 if r_g_diff < 0.01 and g_b_diff < 0.01 and r_b_diff < 0.01:
-                    tqdm.write(f"   ❌ RGB channels IDENTICAL! (grayscale/uniform)")
+                    tqdm.write(f"   [✕] RGB channels IDENTICAL! (grayscale/uniform)")
                     tqdm.write(f"      R-G: {r_g_diff:.4f}, G-B: {g_b_diff:.4f}, R-B: {r_b_diff:.4f}")
                     tqdm.write(f"      → Network not learning color!")
                 else:
-                    tqdm.write(f"   ✅ RGB channels have variation")
+                    tqdm.write(f"   [✓] RGB channels have variation")
                     tqdm.write(f"      R-G: {r_g_diff:.4f}, G-B: {g_b_diff:.4f}, R-B: {r_b_diff:.4f}")
                 
                 # Opacity analysis
@@ -746,15 +746,15 @@ class Trainer:
                 
                 # Interpret opacity
                 if coarse_acc.mean() < 0.1:
-                    tqdm.write(f"   ❌ VERY LOW opacity! Scene is transparent!")
+                    tqdm.write(f"   [✕] VERY LOW opacity! Scene is transparent!")
                     tqdm.write(f"      → Density bias too negative OR density not learned")
                 elif coarse_acc.mean() < 0.3:
-                    tqdm.write(f"   ⚠️  Low opacity. Still learning geometry")
+                    tqdm.write(f"   [!]  Low opacity. Still learning geometry")
                 elif coarse_acc.mean() > 0.9:
-                    tqdm.write(f"   ⚠️  VERY HIGH opacity! Scene is opaque everywhere")
+                    tqdm.write(f"   [!]  VERY HIGH opacity! Scene is opaque everywhere")
                     tqdm.write(f"      → Might be overfitting or density bias too high")
                 else:
-                    tqdm.write(f"   ✅ Opacity in reasonable range")
+                    tqdm.write(f"   [✓] Opacity in reasonable range")
                 
                 # Depth analysis
                 tqdm.write(f"\n   Depth Map:")
@@ -764,16 +764,16 @@ class Trainer:
                 
                 scene_mid = (self.config.data.z_near + self.config.data.z_far) / 2
                 if abs(coarse_depth.mean() - scene_mid) < 0.1:
-                    tqdm.write(f"   ⚠️  Depth ≈ scene midpoint ({scene_mid:.2f})")
+                    tqdm.write(f"   [!]  Depth ≈ scene midpoint ({scene_mid:.2f})")
                     tqdm.write(f"      → Uniform depth (not learning geometry)")
                 else:
-                    tqdm.write(f"   ✅ Depth varies from midpoint")
+                    tqdm.write(f"   [✓] Depth varies from midpoint")
                 
                 # Fine network
                 fine_rgb = outputs['fine']['rgb_map'][0]
                 fine_acc = outputs['fine']['acc_map'][0]
                 
-                tqdm.write(f"\n   📊 Fine Network:")
+                tqdm.write(f"\n   ▢ Fine Network:")
                 tqdm.write(f"   RGB output:")
                 tqdm.write(f"     R: mean={fine_rgb[:, 0].mean():.3f}, std={fine_rgb[:, 0].std():.3f}")
                 tqdm.write(f"     G: mean={fine_rgb[:, 1].mean():.3f}, std={fine_rgb[:, 1].std():.3f}")
@@ -784,15 +784,15 @@ class Trainer:
                 r_b_diff_f = (fine_rgb[:, 0] - fine_rgb[:, 2]).abs().mean()
                 
                 if r_g_diff_f < 0.01 and g_b_diff_f < 0.01:
-                    tqdm.write(f"   ❌ RGB channels IDENTICAL!")
+                    tqdm.write(f"   [✕] RGB channels IDENTICAL!")
                 else:
-                    tqdm.write(f"   ✅ RGB channels have variation")
+                    tqdm.write(f"   [✓] RGB channels have variation")
                 
                 tqdm.write(f"\n   Opacity: mean={fine_acc.mean():.3f}, range=[{fine_acc.min():.3f}, {fine_acc.max():.3f}]")
                 
                 # Target comparison
                 tgt_rgb = rays_data['tgt_rgb'][0]
-                tqdm.write(f"\n3️⃣ Target vs Output:")
+                tqdm.write(f"\n[ Target vs Output ]")
                 tqdm.write(f"   Target RGB range: [{tgt_rgb.min():.3f}, {tgt_rgb.max():.3f}]")
                 tqdm.write(f"   Output RGB range: [{fine_rgb.min():.3f}, {fine_rgb.max():.3f}]")
                 tqdm.write(f"   Target mean: {tgt_rgb.mean():.3f}")
@@ -800,9 +800,9 @@ class Trainer:
                 
                 # Check if output stuck at extremes
                 if fine_rgb.mean() < 0.1:
-                    tqdm.write(f"   ❌ Output very dark! (mean={fine_rgb.mean():.3f})")
+                    tqdm.write(f"   [✕] Output very dark! (mean={fine_rgb.mean():.3f})")
                 elif fine_rgb.mean() > 0.9:
-                    tqdm.write(f"   ⚠️  Output very bright! (mean={fine_rgb.mean():.3f})")
+                    tqdm.write(f"   [!]]  Output very bright! (mean={fine_rgb.mean():.3f})")
                 
                 tqdm.write(f"{'='*70}\n")
         
@@ -818,7 +818,7 @@ class Trainer:
         """
         if debug:
             tqdm.write(f"\n{'='*70}")
-            tqdm.write(f"🎨 VISUALIZATION (Step {self.global_step})")
+            tqdm.write(f"[ VISUALIZATION (Step {self.global_step}) ]")
             tqdm.write(f"{'='*70}")
         
         with torch.no_grad():
@@ -843,8 +843,8 @@ class Trainer:
             fine_chunks = []
             depth_coarse_chunks = []
             depth_fine_chunks = []
-            acc_coarse_chunks = []  # ✅ 추가됨
-            acc_fine_chunks = []    # ✅ 추가됨
+            acc_coarse_chunks = []  
+            acc_fine_chunks = []   
             
             for i in range(0, rays_o_flat.shape[1], chunk_size):
                 rays_o_chunk = rays_o_flat[:, i:i+chunk_size]
@@ -866,7 +866,7 @@ class Trainer:
                 depth_coarse_chunks.append(outputs_viz['coarse']['depth_map'])
                 depth_fine_chunks.append(outputs_viz['fine']['depth_map'])
                 
-                # ✅ Acc Map (Opacity) 수집
+                # Acc Map (Opacity) 수집
                 acc_coarse_chunks.append(outputs_viz['coarse']['acc_map'])
                 acc_fine_chunks.append(outputs_viz['fine']['acc_map'])
             
@@ -877,7 +877,7 @@ class Trainer:
             depth_coarse = torch.cat(depth_coarse_chunks, dim=1)[0].reshape(H_viz, W_viz).cpu().numpy()
             depth_fine = torch.cat(depth_fine_chunks, dim=1)[0].reshape(H_viz, W_viz).cpu().numpy()
             
-            # ✅ Acc Map 결합
+            # Acc Map 결합
             acc_coarse = torch.cat(acc_coarse_chunks, dim=1)[0].reshape(H_viz, W_viz).cpu().numpy()
             acc_fine = torch.cat(acc_fine_chunks, dim=1)[0].reshape(H_viz, W_viz).cpu().numpy()
             
@@ -970,9 +970,9 @@ class Trainer:
         plt.close(fig)
         
         if debug:
-            tqdm.write(f"  💾 Saved: {save_path}")
-            tqdm.write(f"  📊 Coarse PSNR: {coarse_psnr:.2f} dB")
-            tqdm.write(f"  📊 Fine PSNR: {fine_psnr:.2f} dB")
+            tqdm.write(f"  ▢ Saved: {save_path}")
+            tqdm.write(f"  ↳ Coarse PSNR: {coarse_psnr:.2f} dB")
+            tqdm.write(f"  ↳ Fine PSNR: {fine_psnr:.2f} dB")
             tqdm.write(f"{'='*70}\n")
 
     def _compute_losses(self, outputs, tgt_rgb, debug=False):
@@ -1064,7 +1064,7 @@ class Trainer:
             if 'raw_density' in outputs['fine']:
                 density_mean = outputs['fine']['raw_density'].mean().item()
                 if density_mean > 0.0: # 이상 징후일 때만 출력하도록 조건 추가 가능
-                     tqdm.write(f"  🌫️ Avg Density: {density_mean:.3f}")
+                     tqdm.write(f"  ▢ Avg Density: {density_mean:.3f}")
 
         return losses
     
@@ -1075,21 +1075,21 @@ class Trainer:
         
         if torch.isnan(loss) or torch.isinf(loss):
             tqdm.write(f"\n{'='*70}")
-            tqdm.write(f"❌ NaN/Inf DETECTED at Epoch {self.epoch+1}, Batch {batch_idx}!")
+            tqdm.write(f"[✕] NaN/Inf DETECTED at Epoch {self.epoch+1}, Batch {batch_idx}!")
             tqdm.write(f"{'='*70}")
             tqdm.write(f"  Loss coarse: {losses['coarse'].item()}")
             tqdm.write(f"  Loss fine: {losses['fine'].item()}")
             tqdm.write(f"  Total loss: {loss.item()}")
             
             # Detailed debugging
-            tqdm.write(f"\n📊 Detailed Debug Info:")
+            tqdm.write(f"\n[ Detailed Debug Info ]")
             check_tensor("Coarse RGB output", outputs['coarse']['rgb_map'])
             check_tensor("Fine RGB output", outputs['fine']['rgb_map'])
             check_tensor("Target RGB", rays_data['tgt_rgb'])
             check_tensor("Rays origin", rays_data['rays_o'])
             check_tensor("Rays direction", rays_data['rays_d'])
             
-            tqdm.write(f"\n💡 Possible causes:")
+            tqdm.write(f"\n[ Possible causes ]")
             tqdm.write(f"  1. Learning rate too high")
             tqdm.write(f"  2. Gradient explosion")
             tqdm.write(f"  3. Invalid camera parameters")
@@ -1115,9 +1115,9 @@ class Trainer:
             total_norm = total_norm ** 0.5
             
             # [수정] Gradient 요약 정보만 간결하게 출력
-            tqdm.write(f"\n[Step {self.global_step}] 📉 Grad Norm: {total_norm:.4f}")
+            tqdm.write(f"\n[Step {self.global_step}]  Grad Norm: {total_norm:.4f}")
             if total_norm > 10.0:
-                tqdm.write("  ⚠️ High Gradient detected (will be clipped)")
+                tqdm.write("  [!] High Gradient detected (will be clipped)")
 
         # Gradient clipping
         # [수정] Config에서 설정한 grad_clip 값 사용 (기본값 1.0)
@@ -1156,12 +1156,12 @@ class Trainer:
         else:
             eta = "calculating..."
         
-        # ✅ 현재 배치의 첫 번째 샘플 인덱스
+        # 현재 배치의 첫 번째 샘플 인덱스
         batch_size = self.config.training.batch_size
         samples_done = (self.epoch * len(self.train_loader) + batch_idx) * batch_size
         current_sample_idx = samples_done % len(self.train_dataset)
         
-        # ✅ Dataset에서 instance 정보 가져오기
+        # Dataset에서 instance 정보 가져오기
         if hasattr(self.train_dataset, 'sample_to_instance_info'):
             info = self.train_dataset.sample_to_instance_info.get(current_sample_idx)
             
@@ -1169,12 +1169,12 @@ class Trainer:
                 inst_idx, repeat_num, total_views = info
                 num_instances = len(self.train_dataset.valid_indices)
                 
-                # ✅ 수정: 실제 view 개수 표시
+                # 수정: 실제 view 개수 표시
                 desc = (
                     f'E[{self.epoch+1}/{self.config.training.num_epochs}] '
-                    f'I {inst_idx+1}/{num_instances} '  # ✅ 1-based index
-                    f'R{repeat_num+1}/{self.train_dataset.repeat_factor} '  # ✅ 1-based
-                    f'V{total_views}'  # ✅ Total valid views
+                    f'I {inst_idx+1}/{num_instances} '  # 1-based index
+                    f'R{repeat_num+1}/{self.train_dataset.repeat_factor} '  # 1-based
+                    f'V{total_views}'  # Total valid views
                 )
             else:
                 desc = f'E[{self.epoch+1}/{self.config.training.num_epochs}]'
@@ -1186,7 +1186,7 @@ class Trainer:
         current_lr = self.optimizer.param_groups[0]['lr']
         
         pbar.set_postfix({
-            'lr': f'{current_lr:.2e}',  # ✅ LR 추가
+            'lr': f'{current_lr:.2e}',  #  LR 추가
             'loss': f'{metrics["loss"] / n:.4f}',
             'c_psnr': f'{metrics["psnr_coarse"] / n:.2f}',
             'f_psnr': f'{metrics["psnr_fine"] / n:.2f}',
@@ -1220,7 +1220,7 @@ class Trainer:
             
             self.writer.add_scalar('val_step/loss', val_loss, self.global_step)
             self.writer.add_scalar('val_step/psnr', val_psnr, self.global_step)
-            self.writer.add_scalar('val_step/ssim', val_ssim, self.global_step) # ✅ [추가] TensorBoard 기록
+            self.writer.add_scalar('val_step/ssim', val_ssim, self.global_step) # [추가] TensorBoard 기록
             
             # Save best model
             if val_psnr > self.best_val_psnr:
@@ -1228,7 +1228,7 @@ class Trainer:
                 self.best_val_loss = val_loss
                 self.best_val_ssim = val_ssim # [추가] 최신 기록 갱신
                 self.save_checkpoint('best_model.pth')
-                tqdm.write(f"\n✓ New best model! Val PSNR: {val_psnr:.2f} dB, SSIM: {val_ssim:.3f}") # ✅ 로그 수정
+                tqdm.write(f"\n✓ New best model! Val PSNR: {val_psnr:.2f} dB, SSIM: {val_ssim:.3f}") # 로그 수정
             
             self.model.train()
         
@@ -1460,7 +1460,7 @@ class Trainer:
         
         plt.close(fig)
         
-        tqdm.write(f"  📸 Validation summary saved: {file_name}")
+        tqdm.write(f"  ▢ Validation summary saved: {file_name}")
     
     def train(self):
         """Main training loop"""
@@ -1470,7 +1470,7 @@ class Trainer:
         tqdm.write(f"{'='*70}\n")
         
         # Training Configuration
-        tqdm.write("\n📋 Training Configuration:")
+        tqdm.write("\n▢ Training Configuration ")
         tqdm.write("─" * 70)
         tqdm.write(f"  {'Batch size:':<25} {self.config.training.batch_size}")
         tqdm.write(f"  {'Number of epochs:':<25} {self.config.training.num_epochs}")
@@ -1483,7 +1483,7 @@ class Trainer:
         tqdm.write("─" * 70)
         
         # Optimizer info
-        tqdm.write(f"\n🔧 Optimizer: {self.optimizer.__class__.__name__}")
+        tqdm.write(f"\n▢ Optimizer: {self.optimizer.__class__.__name__}")
         tqdm.write(f"  {'Total parameters:':<25} {sum(p.numel() for p in self.model.parameters()):,}")
         tqdm.write(f"  {'Trainable parameters:':<25} {sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}")
         
@@ -1514,7 +1514,7 @@ class Trainer:
                 if val_psnr > self.best_val_psnr:
                     self.best_val_psnr = val_psnr
                     self.best_val_loss = val_loss
-                    self.best_val_ssim = val_ssim # ✅ [추가]
+                    self.best_val_ssim = val_ssim #  [추가]
                     self.save_checkpoint('best_model.pth')
                     tqdm.write(f"\n✓ New best model! Val PSNR: {val_psnr:.2f} dB, SSIM: {val_ssim:.3f}")
             
@@ -1567,7 +1567,7 @@ class Trainer:
         try:
             checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         except Exception as e:
-            tqdm.write(f"❌ Failed to load checkpoint: {e}")
+            tqdm.write(f"[✕] Failed to load checkpoint: {e}")
             return
 
         # 1. 모델 가중치 로드 (항상 실행)
@@ -1594,8 +1594,6 @@ class Trainer:
             tqdm.write(f"   LR OVERRIDE ACTIVATED: {override_lr}")
             tqdm.write(f"{'='*45}")
 
-            # (선택) Optimizer 상태는 로드하되 LR만 바꿀 것인가, 아예 초기화할 것인가?
-            # 여기서는 'momentum' 정보를 살리기 위해 로드는 하되 LR을 강제 변경합니다.
             if load_optimizer:
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             
@@ -1654,7 +1652,7 @@ class Trainer:
         self.model.eval()
         
         tqdm.write(f"\n{'='*70}")
-        tqdm.write("🔍 TRAINING DIAGNOSIS")
+        tqdm.write("[ TRAINING DIAGNOSIS ]")
         tqdm.write(f"{'='*70}\n")
         
         # 배치 준비
@@ -1663,15 +1661,13 @@ class Trainer:
         rays_data = self._sample_rays(data, debug=False)
         
         with torch.no_grad():
-            # ============================================================
-            # ✅ 1. Feature Check (리스트 대응 수정)
-            # ============================================================
+            # 1. Feature Check (리스트 대응 수정)
             features_raw = self.model.encoder(data['src_images'])
-            tqdm.write("1️⃣ Feature Extraction:")
+            tqdm.write("[ Feature Extraction ]")
             
             # 리스트인지 확인하여 분기 처리
             if isinstance(features_raw, list):
-                tqdm.write(f"   ✅ Multi-scale Features detected (Count: {len(features_raw)})")
+                tqdm.write(f"   [✓] Multi-scale Features detected (Count: {len(features_raw)})")
                 for i, feat in enumerate(features_raw):
                     # 5D(B, V, C, H, W) -> 4D(B*V, C, H, W) View 변환 (통계 계산용)
                     if feat.dim() == 5: 
@@ -1685,12 +1681,10 @@ class Trainer:
                 features = features_raw
                 if features.dim() == 5:
                      features = features.view(-1, *features.shape[2:])
-                tqdm.write(f"   Std: {features.std():.3f} {'✅' if features.std() > 0.1 else '❌ Too uniform!'}")
+                tqdm.write(f"   Std: {features.std():.3f} {'[✓]' if features.std() > 0.1 else '❌ Too uniform!'}")
             
-            # ============================================================
-            # ✅ 2. RGB & Density Analysis
-            # ============================================================
-            tqdm.write("\n2️⃣ Network Output Analysis:")
+            #  2. RGB & Density Analysis
+            tqdm.write("\n[ Network Output Analysis ]")
             
             # pixelnerf.py의 forward 호출
             outputs = self.model(
@@ -1711,10 +1705,10 @@ class Trainer:
             r_mean, g_mean, b_mean = coarse_rgb.mean(dim=0)
             rgb_diff = max(abs(r_mean - g_mean), abs(g_mean - b_mean), abs(r_mean - b_mean))
             
-            tqdm.write(f"\n   📊 Coarse Network:")
+            tqdm.write(f"\n   ▢ Coarse Network:")
             tqdm.write(f"      RGB: R={r_mean:.3f}, G={g_mean:.3f}, B={b_mean:.3f}")
-            tqdm.write(f"      Color Diff: {rgb_diff:.4f} {'✅ Learning color!' if rgb_diff > 0.01 else '❌ Grayscale'}")
-            tqdm.write(f"      Opacity: {coarse_acc.mean():.3f} {'✅' if 0.1 < coarse_acc.mean() < 0.9 else '⚠️ Extreme!'}")
+            tqdm.write(f"      Color Diff: {rgb_diff:.4f} {'✓ Learning color!' if rgb_diff > 0.01 else '✕ Grayscale'}")
+            tqdm.write(f"      Opacity: {coarse_acc.mean():.3f} {'✓' if 0.1 < coarse_acc.mean() < 0.9 else '[!] Extreme!'}")
             
             # Fine network
             fine_rgb = outputs['fine']['rgb_map'][0]
@@ -1723,21 +1717,19 @@ class Trainer:
             r_mean, g_mean, b_mean = fine_rgb.mean(dim=0)
             rgb_diff = max(abs(r_mean - g_mean), abs(g_mean - b_mean), abs(r_mean - b_mean))
             
-            tqdm.write(f"\n   📊 Fine Network:")
+            tqdm.write(f"\n   ▢ Fine Network:")
             tqdm.write(f"      RGB: R={r_mean:.3f}, G={g_mean:.3f}, B={b_mean:.3f}")
-            tqdm.write(f"      Color Diff: {rgb_diff:.4f} {'✅ Learning color!' if rgb_diff > 0.01 else '❌ Grayscale'}")
-            tqdm.write(f"      Opacity: {fine_acc.mean():.3f} {'✅' if 0.1 < fine_acc.mean() < 0.9 else '⚠️ Extreme!'}")
+            tqdm.write(f"      Color Diff: {rgb_diff:.4f} {'✓ Learning color!' if rgb_diff > 0.01 else '✕ Grayscale'}")
+            tqdm.write(f"      Opacity: {fine_acc.mean():.3f} {'✓' if 0.1 < fine_acc.mean() < 0.9 else '[!] Extreme!'}")
             
             # Raw density check
             if 'raw_density' in outputs['coarse']:
                 density = outputs['coarse']['raw_density']
                 density_max = density.max()
-                tqdm.write(f"\n   🧱 Density Peak: {density_max:.3f} {'✅ Solid' if density_max > 3.0 else '⚠️ Weak'}")
+                tqdm.write(f"\n   ▢ Density Peak: {density_max:.3f} {'✓ Solid' if density_max > 3.0 else '[!] Weak'}")
             
-            # ============================================================
-            # ✅ 3. Loss & PSNR
-            # ============================================================
-            tqdm.write("\n3️⃣ Loss Check:")
+            # 3. Loss & PSNR
+            tqdm.write("\n[ Loss Check ]")
             tgt_rgb = rays_data['tgt_rgb']
             loss = self.criterion(fine_rgb, tgt_rgb[0])
             psnr = mse2psnr(loss)

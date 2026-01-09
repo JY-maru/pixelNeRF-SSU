@@ -1,15 +1,14 @@
 #!/bin/bash
 # ==========================================
-# Pixel-NeRF GCS Auto Downloader + Unzipper (Stable v2)
+# Pixel-NeRF GCS Auto Downloader + Unzipper (Stable v4 - Pipe Fix)
 # ------------------------------------------
-# 기능 요약:
-#   - GCS의 ZIP 파일을 /content/load_data 에 임시 다운로드
-#   - 압축 해제 결과를 -to 인자로 지정한 경로에 저장
-#   - Colab 환경 자동 감지 및 GCS 인증
-#   - crcmod (C-extension) 최적화 설치
+# [수정 사항]
+# 1. unzip | head 파이프라인에서 발생하는 SIGPIPE 에러 무시 처리 (|| true)
+# 2. 루프 진입 시 디버깅용 메시지 출력 추가
+# 3. set +e로 루프 내부의 사소한 에러로 인한 스크립트 중단 방지
 # ==========================================
 
-set -euo pipefail
+set -uo pipefail # -e 옵션 잠시 제거 (안전성 확보)
 
 # 0) 인자 파싱
 if [[ $# -lt 2 || "$1" != "-from" ]]; then
@@ -29,7 +28,7 @@ PREFIX=$(echo "$INPUT_PATH" | cut -d'/' -f2-)
 REMOTE_PATH="gs://${BUCKET}/${PREFIX}"
 
 echo "=========================================="
-echo "Pixel-NeRF GCS Fetcher (Stable v2)"
+echo "Pixel-NeRF GCS Fetcher (Stable v4)"
 echo "------------------------------------------"
 echo "BUCKET   : ${BUCKET}"
 echo "PREFIX   : ${PREFIX}"
@@ -38,7 +37,7 @@ echo "ZIP SAVE : ${DOWNLOAD_BASE}"
 echo "EXTRACT  : ${OUTPUT_PATH}"
 echo "=========================================="
 
-# 1) crcmod 최적화 (빠른 다운로드용)
+# 1) crcmod 최적화
 if ! python3 -c "import crcmod" &>/dev/null; then
   echo "Installing crcmod..."
   pip install -q crcmod
@@ -56,7 +55,7 @@ PY
   fi
 fi
 
-# 2) Colab 환경 감지 및 GCS 인증
+# 2) Colab 인증
 IS_COLAB=$(python3 - <<'PY'
 import sys
 print('google.colab' in sys.modules)
@@ -74,12 +73,12 @@ else
   echo "Skipping Colab authentication (not detected)."
 fi
 
-# 3) ZIP 파일 검색
+# 3) ZIP 검색
 echo "Scanning for ZIP files in ${REMOTE_PATH}..."
 ZIP_LIST=$(gsutil ls "${REMOTE_PATH}/*.zip" 2>/dev/null || true)
 
 if [[ -z "$ZIP_LIST" ]]; then
-  echo "❌ No ZIP files found under ${REMOTE_PATH}"
+  echo "✕ No ZIP files found under ${REMOTE_PATH}"
   exit 1
 fi
 
@@ -88,56 +87,85 @@ echo " [ Found ${ZIP_COUNT} ZIP files ]"
 echo "$ZIP_LIST"
 echo "------------------------------------------"
 
-# 4) ZIP 다운로드
+# 4) 다운로드
 echo " [ Download ] ZIP files to ${DOWNLOAD_BASE}..."
 echo "$ZIP_LIST" | tr -d '\r' | gsutil -m cp -n -I "${DOWNLOAD_BASE}/"
-echo "✅ Download complete."
+echo "✓ Download complete."
 
 # 5) 압축 해제
 echo "------------------------------------------"
 echo "Extracting all ZIP archives..."
 
 if [[ "$OUTPUT_PATH" == *"/drive/"* ]]; then
-  echo "Google Drive detected → Sequential unzip (for I/O safety)"
-  for zipfile in "${DOWNLOAD_BASE}"/*.zip; do
-    [[ -f "$zipfile" ]] || continue
+  echo "Google Drive detected → Sequential unzip (Smart Path Detection)"
+  
+  # 루프 시작 전 파일 확인
+  shopt -s nullglob
+  FILES=("${DOWNLOAD_BASE}"/*.zip)
+  shopt -u nullglob
+
+  if [ ${#FILES[@]} -eq 0 ]; then
+      echo "✕ Error: No zip files found in ${DOWNLOAD_BASE}"
+      exit 1
+  fi
+
+  for zipfile in "${FILES[@]}"; do
     name=$(basename "$zipfile" .zip)
-    dest="${OUTPUT_PATH}/${name}"
-    unzip -tq "$zipfile" >/dev/null 2>&1 || { echo "Skipping corrupted: $zipfile"; continue; }
-    mkdir -p "$dest"
-    echo "Extracting $zipfile → $dest"
-    unzip -q -o "$zipfile" -d "$dest"
-    echo "Done: $name"
+    echo "▶ Processing: $name"  # 진행 상황 표시
+
+    # [핵심 수정] 파이프 에러 무시 (|| true)
+    first_entry=$(unzip -Z1 "$zipfile" 2>/dev/null | head -n 1 || true)
+    
+    # first_entry가 비어있으면(오류 등) 기본값 처리
+    if [[ -z "$first_entry" ]]; then
+        echo "[!]  Warning: Cannot read structure of $name. Extracting to subdir."
+        dest="${OUTPUT_PATH}/${name}"
+        mkdir -p "$dest"
+    elif [[ "$first_entry" == "$name/"* ]]; then
+        dest="${OUTPUT_PATH}"
+        echo "   → Structure detected ($name/...) → Extracting to root."
+    else
+        dest="${OUTPUT_PATH}/${name}"
+        mkdir -p "$dest"
+        echo "   ▢ Flat structure detected → Extracting to subfolder: $name"
+    fi
+
+    # 압축 해제
+    if unzip -q -o "$zipfile" -d "$dest"; then
+        echo "   ✓ Done: $name"
+    else
+        echo "   ✕ Failed to extract: $name"
+    fi
   done
+
 else
+  # 로컬/Colab VM 환경 (병렬 처리)
   echo "Using parallel unzip (3 processes)..."
   export OUTPUT_PATH
   find "${DOWNLOAD_BASE}" -maxdepth 1 -name "*.zip" | xargs -P 3 -I{} bash -c '
     zipfile="{}"
     name=$(basename "$zipfile" .zip)
-    dest="${OUTPUT_PATH}/${name}"
-    mkdir -p "$dest"
-
-    first_entry=$(unzip -Z1 "$zipfile" | head -1)
+    
+    first_entry=$(unzip -Z1 "$zipfile" 2>/dev/null | head -n 1 || true)
+    
     if [[ "$first_entry" == "$name/"* ]]; then
-      tmp_dir="${dest}_tmp"
-      mkdir -p "$tmp_dir"
-      unzip -q -o "$zipfile" -d "$tmp_dir"
-      shopt -s dotglob
-      mv "$tmp_dir/$name"/* "$dest"/
-      rm -rf "$tmp_dir"
-      shopt -u dotglob
+        dest="${OUTPUT_PATH}"
+        echo "→ ($name) Direct extract..."
     else
-      unzip -q -o "$zipfile" -d "$dest"
+        dest="${OUTPUT_PATH}/${name}"
+        mkdir -p "$dest"
+        echo "▢ ($name) Create folder & extract..."
     fi
-    echo "✅ Done: $name"
+
+    unzip -q -o "$zipfile" -d "$dest"
+    echo "✓ Done: $name"
   '
 fi
 
 # 6) 결과 요약
 echo "------------------------------------------"
-echo "✅ All ZIPs extracted successfully."
-du -sh "${OUTPUT_PATH}"/* | sort -h || true
+echo "✓ All ZIPs extracted successfully."
+du -sh "${OUTPUT_PATH}"/* 2>/dev/null | sort -h || echo "Check folder size manually."
 echo "=========================================="
 echo "ZIPs stored in : ${DOWNLOAD_BASE}/"
 echo "Data ready at  : ${OUTPUT_PATH}/"

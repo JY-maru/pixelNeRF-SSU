@@ -53,7 +53,7 @@ def parse_shapenet_intrinsic(path):
         return torch.eye(3, dtype=torch.float32)
 
 def load_data(folder_path, target_size, device='cuda'):
-    print(f"📂 Loading data from: {folder_path} (Size: {target_size})", flush=True)
+    print(f"▢ Loading data from: {folder_path} (Size: {target_size})", flush=True)
     rgb_dir = os.path.join(folder_path, 'rgb')
     pose_dir = os.path.join(folder_path, 'pose')
     intrinsics_dir = os.path.join(folder_path, 'intrinsics')
@@ -62,7 +62,7 @@ def load_data(folder_path, target_size, device='cuda'):
     img_paths = sorted(glob.glob(os.path.join(rgb_dir, "*.png")) + glob.glob(os.path.join(rgb_dir, "*.jpg")))
     pose_paths = sorted(glob.glob(os.path.join(pose_dir, "*.txt")))
     
-    if not img_paths: raise FileNotFoundError(f"❌ No images found in {rgb_dir}")
+    if not img_paths: raise FileNotFoundError(f"[✕] No images found in {rgb_dir}")
     num_views = min(len(img_paths), len(pose_paths))
     
     use_per_view_intrinsic = False
@@ -136,7 +136,7 @@ class PixelNeRFInference:
         state_dict = checkpoint['model_state_dict'] if 'model_state_dict' in checkpoint else checkpoint
         self.model.load_state_dict(state_dict)
         
-        print("✅ Weights loaded successfully")
+        print("[✓] Weights loaded successfully")
 
     def optimize(self, src_data):
         steps = self.config.tto.num_steps
@@ -346,14 +346,14 @@ class PixelNeRFInference:
             save_path = os.path.join(output_dir, save_filename)
             
             imageio.mimsave(save_path, frames, fps=final_fps, quality=9)
-            print(f"✨ Orbit Video saved to: {save_path} (FPS: {final_fps})")
+            print(f"▢ Orbit Video saved to: {save_path} (FPS: {final_fps})")
             
         elif mode == 'views':
             save_root = os.path.join(output_dir, instance_name, 'views')
             os.makedirs(save_root, exist_ok=True)
             for i, frame in enumerate(frames):
                 imageio.imwrite(os.path.join(save_root, f"{i:06d}.png"), frame)
-            print(f"✨ Views (Images) saved to: {save_root}")
+            print(f"▢ Views (Images) saved to: {save_root}")
 
 
 CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -373,7 +373,7 @@ class DataPreprocessor:
                 shutil.rmtree(self.target_root)
                 print(f" [ Cleared ] : {self.target_root}")
             except Exception as e:
-                print(f"❌ Error clearing directory: {e}")
+                print(f"[✕] Error clearing directory: {e}")
                 return None
         os.makedirs(self.target_root, exist_ok=True)
         final_target_path = os.path.join(self.target_root, self.output_dir_name)
@@ -388,7 +388,7 @@ class DataPreprocessor:
             radius = np.linalg.norm(loc)
             return 0.0 if radius < 1e-6 else np.degrees(np.arcsin(loc[2] / radius))
         except Exception as e:
-            print(f"⚠️ Pose error {pose_path}: {e}")
+            print(f"[!] Pose error {pose_path}: {e}")
             return 999.0
 
     def prepare_data(self, num_views=6, max_elevation=50.0, specific_obj_id=None):
@@ -396,7 +396,7 @@ class DataPreprocessor:
         if dst_obj_path is None: return None, None
         
         if not os.path.exists(self.source_root):
-            print(f"❌ Source not found: {self.source_root}"); return None, None
+            print(f"[✕] Source not found: {self.source_root}"); return None, None
 
         if specific_obj_id:
             obj_id = specific_obj_id
@@ -404,7 +404,7 @@ class DataPreprocessor:
             if not os.path.exists(src_obj_path): print(f"❌ ID '{obj_id}' not found."); return None, None
         else:
             objects = [d for d in os.listdir(self.source_root) if os.path.isdir(os.path.join(self.source_root, d))]
-            if not objects: print("❌ No objects found."); return None, None
+            if not objects: print("[✕] No objects found."); return None, None
             obj_id = random.choice(objects)
             src_obj_path = os.path.join(self.source_root, obj_id)
 
@@ -428,7 +428,7 @@ class DataPreprocessor:
                 f_path = os.path.join(src_obj_path, t, f"{fname}.txt")
                 if os.path.exists(f_path): shutil.copy(f_path, os.path.join(dst_obj_path, t))
         
-        print(f"✅ Data ready at: {dst_obj_path}")
+        print(f"[✓] Data ready at: {dst_obj_path}")
         return dst_obj_path, obj_id
 
 def main():
