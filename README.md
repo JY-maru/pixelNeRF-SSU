@@ -86,43 +86,10 @@ pixelNeRF-SSU/
 ```
 inst_id/
 ├── intrinsics.txt
-├── intrinsics/
-│   ├── 000000.txt
-│   ├── 000001.txt
-│   └── ...
-├── pose/
-│   ├── 000000.txt
-│   ├── 000001.txt
-│   └── ...
-└── rgb/
-    ├── 000000.png
-    ├── 000001.png
-    └── ...
+├── intrinsics/   # (Optional) Per-image intrinsics
+├── pose/         # Camera Extrinsics (C2W)
+└── rgb/          # Rendered Images
 ```
-
-- intrinsics.txt 예시 (meta data)
-```
-525.000000 256.000000 256.000000 0.
-0. 0. 0.
-1.
-512 512
-```
-
-- intrinsics/000000.txt 예시 (Flattened $3 \times 3$ Matrix)
-```
-525.0 0.0 256.0 0.0 525.0 256.0 0.0 0.0 1.0
-```
-
-- pose/000000.txt 예시 (Camera Pose : C2W)
-```
--0.5042614340782166 -0.37587812542915344 0.7774547934532166 -1.0106911659240723 -0.8635510206222534 0.21949009597301483 -0.4539864957332611 0.5901824235916138 -5.960464477539063e-08 -0.9002998471260071 -0.43527036905288696 0.5658514499664307 0.0 0.0 -0.0 1.0
-```
-
-- 데이터 fetch
-```bash
-!bash fetch2local.sh -from nerf-data-ssu/shapeNetV2_cars
-```
-google storage의 버킷에서 데이터를 로드합니다.
 
 <br>
 
@@ -216,8 +183,17 @@ $$
 
 이 코드는 **Google Colab** 환경에 최적화되어 있습니다. 데이터 로드부터 학습까지 간편하게 실행 가능합니다.
 
-### 1. Data Loading (One-Line Command)
-복잡한 데이터 다운로드 과정 없이, 아래 스크립트를 통해 학습에 필요한 ShapeNet 데이터를 즉시 로드할 수 있습니다.
+### 1. Data Loading
+
+
+-  **Option A. Google Drive 공유 폴더 이용 (권장)**
+
+1.  **[ShapeNet Cars Dataset](https://drive.google.com/drive/folders/16oQiOyoA_9nHSqFn-jom9AJrChN2iMZV?usp=sharing)** 에 접속합니다.
+2.  자신의 드라이브에 추가한 뒤,  데이터 경로(`config` )를 저장된 경로로 지정하여 사용하면 됩니다.
+
+-  **Option B. 쉘 스크립트 이용**
+
+스토리지에 등록된 사용자라면 별도의 다운로드 스크립트를 통해 데이터를 곧바로 로드할 수 있습니다.
 
 ```bash
 # Colab 셀에서 실행
@@ -231,7 +207,6 @@ $$
  - `config/default_config.yaml` 파일에서 주요 학습 파라미터를 수정할 수 있습니다.
  - `-- resume` : 설정한 가중치부터 학습 재개
  - `-- config`: 지정한 config파일로 학습 (\[DEFAULT\] config/default_config.yaml)
-
 
 ```bash
  python train.py --config config/default_config.yaml
@@ -272,6 +247,7 @@ If you use this code for your research, please cite the original Pixel-NeRF pape
   booktitle={CVPR},
   year={2021}
 }
+```
 
 > License
 This project is released under the MIT License.
