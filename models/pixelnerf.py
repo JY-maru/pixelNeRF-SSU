@@ -170,7 +170,7 @@ class PixelNeRF(nn.Module):
             sampled = sampled.permute(0, 2, 1) # (B*V, N, C_s)
             
             # 마스킹
-            sampled = sampled * valid_f
+            sampled.mul_(valid_f)
             sampled_features_list.append(sampled)
             
         # 4. Concatenation (채널 방향 결합)

@@ -20,7 +20,7 @@ def set_debug_mode(enabled: bool):
     DEBUG_MODE = enabled
     if DEBUG_MODE:
         tqdm.write(f"\n{'='*70}")
-        tqdm.write(f"🐛 DEBUG MODE ENABLED")
+        tqdm.write(f"[ DEBUG MODE ENABLED ]")
         tqdm.write(f"{'='*70}\n")
 
 
@@ -40,10 +40,10 @@ def check_tensor(name, tensor, check_grad=False):
         return
     
     if tensor is None:
-        tqdm.write(f"⚠️ {name}: None")
+        tqdm.write(f"[!] {name}: None")
         return
     
-    tqdm.write(f"\n🔍 {name}:")
+    tqdm.write(f"\n▢ {name}:")
     tqdm.write(f"  Shape: {tensor.shape}")
     tqdm.write(f"  Dtype: {tensor.dtype}")
     tqdm.write(f"  Device: {tensor.device}")
@@ -55,12 +55,12 @@ def check_tensor(name, tensor, check_grad=False):
     has_inf = torch.isinf(tensor).any().item()
     
     if has_nan:
-        tqdm.write(f"  ❌ Contains NaN! Count: {torch.isnan(tensor).sum().item()}")
+        tqdm.write(f"  [✕] Contains NaN! Count: {torch.isnan(tensor).sum().item()}")
     if has_inf:
-        tqdm.write(f"  ❌ Contains Inf! Count: {torch.isinf(tensor).sum().item()}")
+        tqdm.write(f"  [✕] Contains Inf! Count: {torch.isinf(tensor).sum().item()}")
     
     if not has_nan and not has_inf:
-        tqdm.write(f"  ✅ No NaN/Inf")
+        tqdm.write(f"  [✓] No NaN/Inf")
     
     # Gradient 체크
     if check_grad and tensor.requires_grad and tensor.grad is not None:

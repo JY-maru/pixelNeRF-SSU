@@ -1,96 +1,107 @@
 # config/default_config.yaml
-data:
-  data_root: "/content/pixNeRF_shapeNet_v2_data"
-  num_source_views: 4
-  image_size: [256, 256]
-  z_near: 0.1
-  z_far: 3.0
-  use_imagenet_normalize: true
 
-  enable_filtering: true             
-  min_view_angle: 10               # 최소 각도 (너무 비슷한 view 제외)
-  max_view_angle: 60               # degrees
-  min_camera_distance: 1.0         # 최소 거리 (같은 view 제외)
-  max_camera_distance: 2.0
-  min_elevation: 5.0              # 바닥면 제거 (도 단위)
-  max_elevation: 50.0             # 정수리 제거 (도 단위)
+data:
+  data_root: "/content/pixNeRF_shapeNet_v2_data"    # 학습 데이터셋이 위치한 경로
+  num_source_views: 4                               # 입력으로 사용할 뷰의 개수 (Pixel-NeRF의 핵심)
+  image_size: [256, 256]                            # 학습 이미지 해상도 (높을수록 메모리 사용량 급증)
+  z_near: 0.1                                       # 렌더링 시 카메라의 최소 깊이 
+  z_far: 3.0                                        # 렌더링 시 카메라의 최대 깊이 
+  use_imagenet_normalize: true                      # ResNet Encoder 사용 시 필수 (ImageNet 통계로 정규화)
+
+  enable_filtering: true                            # 기하학적 제약 조건 필터링 사용 여부 
+  min_view_angle: 10                                # 두 뷰 사이의 최소 각도 
+  max_view_angle: 60                                # 두 뷰 사이의 최대 각도 
+  min_camera_distance: 1.0                          # 객체 중심으로부터의 최소 카메라 거리
+  max_camera_distance: 2.0                          # 객체 중심으로부터의 최대 카메라 거리
+  min_elevation: 5.0                                # 바닥면(Top-down) 뷰 제외를 위한 최소 높이 각도
+  max_elevation: 50.0                               # 정수리 뷰 제외를 위한 최대 높이 각도
   
   # Training
-  num_train_instances: 10000    
-  repeat_factor: 1                # 각 객체 반복 수 
+  num_train_instances: 10000                        # 학습에 사용할 총 객체(Instance) 수 -> 전체사용
+  repeat_factor: 1                                  # 한 Epoch 내에서 동일 객체를 반복 학습할 횟수  
   
   # Validation  
-  num_val_instances: 1000      
+  num_val_instances: 1000                           # 검증에 사용할 객체 수 (학습 중 성능 평가용) -> 전체사용
   
   # Test 
-  num_test_instances: 10000        # 3개 (unseen)
+  num_test_instances: 10000                         # 테스트(최종 평가)에 사용할 객체 수 -> 전체사용 
   
 model:
-  encoder_type: "resnet34" 
-  encoder_pretrained: true
-  feature_dim: 512
-  d_hidden: 256
-  n_blocks: 5
-  combine_type: "average"
-  n_coarse: 64
-  n_fine: 128
-  white_bkgd : true
-  noise_std: 0.5
-  use_pe: true
-  pe_freq_pos: 10
-  pe_freq_dir: 4
-  density_lambda: 0.001
+  encoder_type: "resnet34"                          # 이미지 특징 추출 백본 (resnet18, 34, 50 등)
+  encoder_pretrained: true                          # ImageNet 사전 학습된 가중치 사용 여부
+  feature_dim: 512                                  # 추출할 특징 벡터의 차원 (메모리에 영향)
+  d_hidden: 256                                     # NeRF MLP 내부의 은닉층 차원 수
+  n_blocks: 5                                       # NeRF MLP의 레이어(블록) 깊이
+  combine_type: "average"                           # 여러 뷰의 특징을 합치는 방식 : average + variance 
+  n_coarse: 64                                      # Coarse 단계: 광선(Ray) 하나당 샘플링 포인트 수
+  n_fine: 192                                       # Fine 단계: 추가 정밀 샘플링 수 (이미지 해상도 내 활용가능)
+  white_bkgd : true                                 # 투명 배경을 흰색으로 처리 (ShapeNet 등 객체 데이터 필수)
+  noise_std: 0.5                                    # 학습 초기 밀도에 주입할 노이즈 (Overfitting 방지)
+  use_pe: true                                      # Positional Encoding 사용 여부 (고주파 디테일 표현)
+  pe_freq_pos: 10                                   # 위치 정보(x,y,z) 인코딩 주파수
+  pe_freq_dir: 4                                    # 방향 정보(view dir) 인코딩 주파수
+  density_lambda: 0.001                             # 밀도 규제 가중치 (허공의 노이즈 밀도 억제)
 
 training:
-  batch_size: 2
-  num_epochs: 400
-  learning_rate: 0.0005
-  weight_decay: 0.0001
-  num_rays_per_batch: 2048
-  chunk_size: 4096
+  batch_size: 2                                     # 한 번에 학습할 객체(Scene)의 수 (메모리 핵심 1)
+  num_epochs: 400                                   # 전체 데이터셋 반복 학습 횟수
+  learning_rate: 0.0005                             # 초기 학습률 (Learning Rate)
+  weight_decay: 0.0001                              # 가중치 감쇠 (Overfitting 방지)
+  num_rays_per_batch: 2048                          # 배치 당 쏠 광선(Ray)의 총 개수 (메모리 핵심 2 - 줄일 것 권장)
+  chunk_size: 2048                                  # 메모리 초과 방지를 위해 연산을 나누어 처리할 단위
 
-  fg_sampling_ratio: 0.6
-  fg_threshold: 0.05
+  fg_sampling_ratio: 0.6                            # 광선 샘플링 시 객체(전경) 영역을 선택할 확률
+  fg_threshold: 0.05                                # 전경/배경을 구분하는 알파 값 임계점
 
-  log_every_n_steps: 1000
-  log_every_n_epochs: 10
-  val_every_n_steps: 0
-  val_every_n_epochs: 5
-  save_every_n_steps: 0
-  save_every_n_epochs: 5
-  checkpoint_dir: "./checkpoints"
-  resume_from: null
-  step_debug: 200 
-
+  log_every_n_steps: 1000                           # 로그 출력 주기 (Step 단위)
+  log_every_n_epochs: 10                            # 로그 출력 주기 (Epoch 단위)
+  val_every_n_steps: 0                              # 검증 수행 주기 (0이면 Epoch 단위 설정 따름)
+  val_every_n_epochs: 5                             # 검증 수행 주기 (Epoch 단위)
+  save_every_n_steps: 0                             # 모델 저장 주기 (Step 단위)
+  save_every_n_epochs: 5                            # 모델 저장 주기 (Epoch 단위)
+  checkpoint_dir: "./checkpoints"                   # 모델 가중치(.pth) 저장 경로
+  resume_from: null                                 # 학습 재개 시 불러올 체크포인트 경로 -> 학습시 인자로 받음 
+  step_debug: 200                                   # 디버깅 정보를 출력할 스텝 간격
 
 optimizer:
-  type: "adam"
-  beta1: 0.9
-  beta2: 0.999
-  eps: 1e-8
-  grad_clip: 1.0
+  type: "adam"                                      # optimize 알고리즘 
+  beta1: 0.9                                        # Adam 파라미터 (Momentum)
+  beta2: 0.999                                      # Adam 파라미터 (RMSProp)
+  eps: 1e-8                                         # ZeroDivisionError 방지용 상수
+  grad_clip: 1.0                                    # 기울기 폭주(Exploding) 방지를 위한 클리핑 값
 
 scheduler:
-  type: "exponential"  
-  gamma: 0.98          # 매 epoch마다 0.98배 감소
-
+  type: "exponential"                               # 학습률 스케줄러 타입
+  gamma: 0.98                                       # 매 Epoch마다 학습률 0.98배
 
 inference:
-  checkpoint_path: "./checkpoints/best_model_256.pth"
-  output_dir: "./outputs"
-  video_fps: 30
-  chunk_size: 1024
+  checkpoint_path: "./checkpoints/best_model_256.pth"  # 추론에 사용할 학습된 모델 경로
+  output_dir: "./outputs"                              # 결과물(이미지, 영상) 저장 경로
+  video_fps: 30                                        # 생성할 비디오의 초당 프레임 수
+  chunk_size: 1024                                     # 추론 시 메모리 관리용 청크 (OOM 발생 시 줄일 것)
 
+# inference 시 TTO
 tto:
-  enabled: ture             # 실행 시 TTO 수행 여부
-  num_steps: 500            # 최적화 스텝 수
-  learning_rate: 0.00001    # 1e-5
-  batch_rays: 512           # 배치당 레이 수
-  image_size: [256, 256]    # TTO용 고해상도 이미지 크기
-  
+  enabled: true                                     # Test-Time Optimization (추론 시 추가 최적화) 사용 여부
+  num_steps: 500                                    # TTO 최적화 반복 횟수
+  learning_rate: 0.00001                            # TTO 학습률 (매우 작게 설정)
+  batch_rays: 512                                   # TTO 수행 시 사용할 Ray 배치 크기
+  image_size: [256, 256]                            # TTO용 고해상도 이미지 크기
+
+test:
+  chunk_size: 8096                                  # 렌더링 시 처리할 광선 수 
+  max_eval_views: 30                                # 객체당 평가할 타겟 뷰 최대 개수 (속도 제한용)
+
+  # TTO (Test-Time Optimization) 설정
+  tto:
+    enabled: false
+    num_steps: 50                                    # 최적화 횟수 
+    learning_rate: 1.0e-5
+    batch_rays: 4096                                 # TTO 학습 시 배치 크기 
+
 debug:
-  enabled: false              # Debug mode on/off
-  log_first_batch: false       # Log first batch details
-  log_every_n_steps: 1000      # Log tensor info every N steps
-  check_nan_inf: true         # Check for NaN/Inf
-  save_debug_images: false    # Save intermediate images
+  enabled: false                                    # 디버그 모드 활성화 여부
+  log_first_batch: false                            # 첫 번째 배치의 상세 정보 로그 출력 여부
+  log_every_n_steps: 1000                           # 텐서 정보를 출력할 주기
+  check_nan_inf: true                               # 이상치(NaN 또는 Inf 값) 발생 감시
+  save_debug_images: false                          # 중간 디버깅용 이미지 저장 여부

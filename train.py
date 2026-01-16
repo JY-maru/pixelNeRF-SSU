@@ -1667,7 +1667,7 @@ class Trainer:
             
             # 리스트인지 확인하여 분기 처리
             if isinstance(features_raw, list):
-                tqdm.write(f"   [✓] Multi-scale Features detected (Count: {len(features_raw)})")
+                tqdm.write(f"   ▢ Multi-scale Features detected (Count: {len(features_raw)})")
                 for i, feat in enumerate(features_raw):
                     # 5D(B, V, C, H, W) -> 4D(B*V, C, H, W) View 변환 (통계 계산용)
                     if feat.dim() == 5: 
@@ -1675,13 +1675,13 @@ class Trainer:
                     
                     std_val = feat.std()
                     mean_val = feat.mean()
-                    tqdm.write(f"     - Level {i} shape={tuple(feat.shape)}: Mean={mean_val:.3f}, Std={std_val:.3f} {'✅' if std_val > 0.01 else '⚠️ Low var'}")
+                    tqdm.write(f"     - Level {i} shape={tuple(feat.shape)}: Mean={mean_val:.3f}, Std={std_val:.3f} {'[✓]' if std_val > 0.01 else '[!] Low var'}")
             else:
                 # 기존 단일 텐서 로직 (Fallback)
                 features = features_raw
                 if features.dim() == 5:
                      features = features.view(-1, *features.shape[2:])
-                tqdm.write(f"   Std: {features.std():.3f} {'[✓]' if features.std() > 0.1 else '❌ Too uniform!'}")
+                tqdm.write(f"   Std: {features.std():.3f} {'[✓]' if features.std() > 0.1 else '[✕] Too uniform!'}")
             
             #  2. RGB & Density Analysis
             tqdm.write("\n[ Network Output Analysis ]")

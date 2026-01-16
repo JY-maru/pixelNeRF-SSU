@@ -152,7 +152,9 @@ class NeRFNetwork(nn.Module):
             # 4. [Variance] 가중 분산 계산
             # 수식: sum( w * (x - mean)^2 )
             # (각 뷰의 특징이 평균과 얼마나 다른가? -> 입체감의 핵심 힌트)
-            var_features = torch.sum(weights * (processed_features - mean_features.unsqueeze(2))**2, dim=2)
+            mean_sq_features = torch.sum(weights * (processed_features ** 2), dim=2)
+            var_features = mean_sq_features - (mean_features ** 2)
+            var_features = torch.clamp(var_features, min=0.0) 
             
             # 5. Concatenation: Mean + Variance
             # MLP 입력 크기 = 2 * C

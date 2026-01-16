@@ -61,8 +61,8 @@ class CameraUtils:
         """
         Get ray directions for all pixels in camera coordinate system
         
-        ✅ OpenCV convention: +Z forward, Y down (image coordinates)
-        ✅ FIXED: Now properly normalized!
+        OpenCV convention: +Z forward, Y down (image coordinates)
+        FIXED: Now properly normalized!
         
         Args:
             H: Image height
@@ -83,14 +83,14 @@ class CameraUtils:
         fx, fy = intrinsics[0, 0], intrinsics[1, 1]
         cx, cy = intrinsics[0, 2], intrinsics[1, 2]
         
-        # ✅ OpenCV convention: +Z forward, no Y flip needed
+        # OpenCV convention: +Z forward, no Y flip needed
         directions = torch.stack([
             (i - cx) / fx,          # X: right
             (j - cy) / fy,          # Y: down (image coordinates)
             torch.ones_like(i)      # Z: forward (+Z)
         ], dim=-1)
         
-        # ✅ CRITICAL FIX: Normalize ray directions
+        # CRITICAL FIX: Normalize ray directions
         # Without this, volume rendering delta calculation is WRONG!
         directions = directions / torch.norm(directions, dim=-1, keepdim=True)
         
@@ -122,7 +122,7 @@ class CameraUtils:
         #print(f"Ray origin mean: {rays_o.mean(dim=(0,1))}")
         #print(f"Ray direction mean: {rays_d.mean(dim=(0,1))}")
         #print(f"Projected back to image space? ...")
-        # ✅ Rays are already normalized from get_ray_directions()
+        # Rays are already normalized from get_ray_directions()
         # No need to normalize again since rotation preserves length
         
         return rays_o, rays_d
@@ -135,7 +135,7 @@ class ProjectionUtils:
         """
         Project 3D points to 2D image coordinates
         
-        ✅ OpenCV convention: +Z forward
+        OpenCV convention: +Z forward
         
         Args:
             points: (N, 3) world space points
@@ -171,9 +171,9 @@ class ProjectionUtils:
         if DEBUG_MODE:
             check_tensor("points_cam", points_cam)
         
-        # ✅ OpenCV: +Z is front
+        # OpenCV: +Z is front
         z = points_cam[:, 2]
-        valid_depth = z > 0.1  # ✅ Positive Z for points in front
+        valid_depth = z > 0.1  # Positive Z for points in front
         
         if DEBUG_MODE:
             tqdm.write(f"  Valid depth ratio: {valid_depth.float().mean():.3f}")
@@ -183,13 +183,13 @@ class ProjectionUtils:
         z_safe = torch.where(
             valid_depth,
             z,
-            torch.ones_like(z) * 1.0  # ✅ Changed to positive
+            torch.ones_like(z) * 1.0  # Changed to positive
         )
-        z_safe = torch.clamp(z_safe, min=0.1)  # ✅ Changed to positive
+        z_safe = torch.clamp(z_safe, min=0.1)  # Changed to positive
         
         # Project to image plane
-        x_norm = points_cam[:, 0] / z_safe  # ✅ No negation
-        y_norm = points_cam[:, 1] / z_safe  # ✅ No negation
+        x_norm = points_cam[:, 0] / z_safe  # No negation
+        y_norm = points_cam[:, 1] / z_safe  # No negation
         
         # Apply intrinsics
         fx = intrinsics[0, 0]
@@ -244,7 +244,7 @@ class ProjectionUtils:
         u = points_2d[..., 0]  # (B, N)
         v = points_2d[..., 1]  # (B, N)
         
-        # ✅ [수정] align_corners=False 논리에 맞춰 '-1' 제거
+        # [수정] align_corners=False 논리에 맞춰 '-1' 제거
         # 이유: False 옵션은 픽셀의 중심이 아니라 가장자리(면적)를 기준으로 하므로
         # 좌표 변환 시 너비/높이 그 자체(W, H)로 비율을 계산해야 정확함
         
@@ -275,8 +275,7 @@ class ProjectionUtils:
         grid = torch.stack([u_norm, v_norm], dim=-1)  # (B, N, 2)
         grid = grid.unsqueeze(1)  # (B, 1, N, 2)
         
-        # ✅ [CRITICAL FIX] Force contiguous memory layout
-        # This fixes: RuntimeError: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED ... non-contiguous input
+        # [CRITICAL FIX] Force contiguous memory layout
         features = features.contiguous()
         grid = grid.contiguous()
 

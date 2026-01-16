@@ -46,7 +46,7 @@ class ResNetEncoder(nn.Module):
         self.layer3 = resnet.layer3
         self.layer4 = resnet.layer4
 
-        # ✅ [추가] FPN Lateral Layers (채널 수 맞추기 1x1 Conv)
+        # [추가] FPN Lateral Layers (채널 수 맞추기 1x1 Conv)
         # 상위 Feature의 채널을 256(또는 적절한 값)으로 통일하여 합치기 쉽게 만듦
         fpn_dim = 256
         self.lat_layer4 = nn.Conv2d(self.latent_size[4], fpn_dim, 1)
@@ -54,7 +54,7 @@ class ResNetEncoder(nn.Module):
         self.lat_layer2 = nn.Conv2d(self.latent_size[2], fpn_dim, 1)
         self.lat_layer1 = nn.Conv2d(self.latent_size[1], fpn_dim, 1) # layer1 출력용
         
-        # ✅ [추가] Smoothing Layers (합친 후 3x3 Conv로 앨리어싱 제거)
+        # [추가] Smoothing Layers (합친 후 3x3 Conv로 앨리어싱 제거)
         self.smooth4 = nn.Conv2d(fpn_dim, fpn_dim // 4, 3, padding=1)
         self.smooth3 = nn.Conv2d(fpn_dim, fpn_dim // 4, 3, padding=1)
         self.smooth2 = nn.Conv2d(fpn_dim, fpn_dim // 4, 3, padding=1)
@@ -95,7 +95,7 @@ class ResNetEncoder(nn.Module):
         # Save original input for concatenation (clone to be safe)
         # x는 ImageNet Normalized 된 상태 (B, 3, H, W)
         
-        # ✅ [수정] Denormalization 수행 (approximate)
+        # [수정] Denormalization 수행 (approximate)
         # ImageNet Mean/Std를 역산하여 [0, 1] 범위로 근사 복원
         # mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         mean = torch.tensor([0.485, 0.456, 0.406], device=x.device).view(1, 3, 1, 1)

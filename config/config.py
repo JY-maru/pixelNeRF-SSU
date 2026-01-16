@@ -1,5 +1,5 @@
 # config/config.py
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Tuple
 import yaml
 
@@ -62,7 +62,7 @@ class TrainingConfig:
     """Training configuration"""
     batch_size: int = 4
     num_epochs: int = 200
-    learning_rate: float = 5e-4 # 기본값 (보통 yaml에서 override)
+    learning_rate: float = 5e-4 
     weight_decay: float = 0.0
     num_rays_per_batch: int = 1024
     chunk_size: int = 4096
@@ -78,6 +78,7 @@ class TrainingConfig:
     save_every_n_epochs: int = 10
     checkpoint_dir: str = "./checkpoints"
     resume_from: Optional[str] = None
+    override_lr: Optional[float] = None
 
 
 @dataclass
@@ -108,11 +109,24 @@ class SchedulerConfig:
 
 @dataclass
 class InferenceConfig:
-    """Inference configuration"""
+    """Inference configuration (For video generation etc.)"""
     checkpoint_path: str = "./checkpoints/best.pth"
     output_dir: str = "./outputs"
     video_fps: int = 30
     chunk_size: int = 4096
+    max_eval_views: int = 20
+
+
+# [추가됨] 테스트 전용 설정 클래스
+@dataclass
+class TestConfig:
+    """
+    Configuration specifically for test.py evaluation 
+    (High Performance Settings for A100/H100)
+    """
+    chunk_size: int = 32768
+    max_eval_views: int = 250
+    tto: TTOConfig = field(default_factory=TTOConfig)
 
 
 @dataclass
@@ -136,6 +150,7 @@ class Config:
                  scheduler: SchedulerConfig, 
                  inference: Optional[InferenceConfig] = None,
                  tto: Optional[TTOConfig] = None,
+                 test: Optional[TestConfig] = None, # [추가됨]
                  debug: Optional[DebugConfig] = None,  
                  device: str = "cuda", 
                  seed: int = 42):
@@ -145,28 +160,20 @@ class Config:
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.inference = inference or InferenceConfig()
+        self.tto = tto or TTOConfig()
+        self.test = test or TestConfig() # [추가됨] 기본값 초기화
         self.debug = debug or DebugConfig()  
         self.device = device  
         self.seed = seed
         self._validate_params()
-        self.tto = tto or TTOConfig()
     
     def _validate_params(self):
         """Validate configuration parameters"""
-        # Learning rate 범위 확인
         if not (1e-6 <= self.training.learning_rate <= 1e-2):
-            print(f"⚠️ Warning: learning_rate {self.training.learning_rate} "
-                  f"is outside typical range [1e-6, 1e-2]")
+            print(f"⚠️ Warning: learning_rate {self.training.learning_rate} is outside typical range")
         
-        # Grad clip 확인
         if self.optimizer.grad_clip < 0.1:
-            print(f"⚠️ Warning: grad_clip {self.optimizer.grad_clip} "
-                  f"is very small. Gradients might explode!")
-        
-        # Ray sampling 확인
-        if self.training.num_rays_per_batch > 2048:
-            print(f"⚠️ Warning: num_rays_per_batch {self.training.num_rays_per_batch} "
-                  f"is very large. Might cause OOM!")
+            print(f"⚠️ Warning: grad_clip {self.optimizer.grad_clip} is very small.")
                   
     @classmethod
     def from_yaml(cls, yaml_path: str) -> 'Config':
@@ -181,15 +188,29 @@ class Config:
         config_dict['optimizer'] = OptimizerConfig(**config_dict['optimizer'])
         config_dict['scheduler'] = SchedulerConfig(**config_dict['scheduler'])
         
-        # Inference config is optional
         if 'inference' in config_dict:
             config_dict['inference'] = InferenceConfig(**config_dict['inference'])
         
+        # Global TTO (if used generally)
         if 'tto' in config_dict:
-            # image_size가 리스트로 들어올 경우 튜플로 변환
             if 'image_size' in config_dict['tto'] and isinstance(config_dict['tto']['image_size'], list):
                 config_dict['tto']['image_size'] = tuple(config_dict['tto']['image_size'])
             config_dict['tto'] = TTOConfig(**config_dict['tto'])
+
+        # [수정] Test Config 파싱 로직 추가
+        if 'test' in config_dict:
+            test_data = config_dict['test']
+            
+            # test 섹션 안에 있는 tto도 파싱해야 함
+            if 'tto' in test_data:
+                # 리스트 -> 튜플 변환 (image_size 등)
+                if 'image_size' in test_data['tto'] and isinstance(test_data['tto']['image_size'], list):
+                    test_data['tto']['image_size'] = tuple(test_data['tto']['image_size'])
+                # 딕셔너리를 TTOConfig 객체로 변환
+                test_data['tto'] = TTOConfig(**test_data['tto'])
+            
+            # 최종적으로 TestConfig 객체 생성
+            config_dict['test'] = TestConfig(**test_data)
 
         if 'debug' in config_dict:
             config_dict['debug'] = DebugConfig(**config_dict['debug'])
@@ -206,8 +227,13 @@ class Config:
             'scheduler': self.scheduler.__dict__,
             'inference': self.inference.__dict__,
             'tto': self.tto.__dict__,
+            'test': self.test.__dict__, 
             'debug': self.debug.__dict__  
         }
         
+        # Nested dataclass handling for YAML dump (TestConfig inside tto)
+        if isinstance(config_dict['test'].get('tto'), TTOConfig):
+             config_dict['test']['tto'] = config_dict['test']['tto'].__dict__
+
         with open(yaml_path, 'w') as f:
             yaml.dump(config_dict, f, default_flow_style=False)

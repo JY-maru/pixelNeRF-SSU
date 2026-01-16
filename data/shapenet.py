@@ -282,7 +282,7 @@ class FilteredShapeNetDataset(Dataset):
 
         if enable_filtering:
             if os.path.exists(self.cache_file):
-                print(f"\n🚀 Loading cached pairs from {self.cache_file}")
+                print(f"\n▢ Loading cached pairs from {self.cache_file}")
                 self._load_cache()
             else:
                 self._filter_all_pairs_multiprocess()
@@ -294,7 +294,7 @@ class FilteredShapeNetDataset(Dataset):
     
     def _filter_all_pairs_multiprocess(self):
         print(f"\n{'='*70}")
-        print(f"🔍 Multiprocessing Filtering ({cpu_count()} cores)")
+        print(f"▢ Multiprocessing Filtering ({cpu_count()} cores)")
         print(f"Angle=[{self.min_view_angle}, {self.max_view_angle}] | Dist=[{self.min_camera_distance}, {self.max_camera_distance}]")
         print(f"Elevation=[{self.min_elevation}, {self.max_elevation}] (Filtering out bottom/top views)") 
         
@@ -331,10 +331,10 @@ class FilteredShapeNetDataset(Dataset):
         
         print(f"  Valid pairs: {len(self.valid_pairs):,} / Valid Instances: {len(self.valid_indices)}")
         if len(self.valid_pairs) == 0:
-            raise ValueError("❌ No valid pairs found! Check your elevation/angle thresholds.")
+            raise ValueError("[✕] No valid pairs found! Check your elevation/angle thresholds.")
 
     def _save_cache(self):
-        print(f"💾 Saving cache to {self.cache_file}...")
+        print(f"▢ Saving cache to {self.cache_file}...")
         cache_data = {
             'valid_pairs': self.valid_pairs,
             'instance_view_counts': self.instance_view_counts,
@@ -351,7 +351,7 @@ class FilteredShapeNetDataset(Dataset):
 
     def _create_all_pairs(self):
         self.valid_pairs = []
-        print("⚠️ Filtering disabled: Using ALL pairs.")
+        print("[!] Filtering disabled: Using ALL pairs.")
         for inst_idx, instance_id in enumerate(self.base_dataset.instance_ids):
             instance_dir = os.path.join(self.base_dataset.data_root, self.base_dataset.split_dir, instance_id)
             image_dir = os.path.join(instance_dir, 'rgb')
