@@ -1,4 +1,6 @@
-# Pixel-NeRF: Multi-View Stereo Enhanced
+# pixel-NeRF를 활용한 차량 이미지 증강
+> **Research on 3D Reconstruction and View Synthesis in Google Colab**
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JY-maru/pixelNeRF-SSU/blob/main/infer.ipynb)
 
 본 프로젝트는 **Pixel-NeRF** (Yu et al., 2021)의 아키텍처를 기반으로, Multi-View Stereo(MVS) 개념(Variance 기반 정합성 판단)과 FPN(Feature Pyramid Network)을 도입하여 학습 효율과 기하학적 정확도를 극대화한 구현체입니다.
