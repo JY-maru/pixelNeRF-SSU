@@ -1,9 +1,9 @@
 # config/default_config.yaml
 
 data:
-  data_root: "/content/pixNeRF_shapeNet_v2_data"    # 학습 데이터셋이 위치한 경로
-  num_source_views: 4                               # 입력으로 사용할 뷰의 개수 (Pixel-NeRF의 핵심)
-  image_size: [256, 256]                            # 학습 이미지 해상도 (높을수록 메모리 사용량 급증)
+  data_root: "/content/pixNeRF_shapeNet_v2_data"    # 데이터셋이 위치한 경로로 수정 
+  num_source_views: 4                               # 입력으로 사용할 뷰의 개수 
+  image_size: [256, 256]                            # 학습 이미지 해상도
   z_near: 0.1                                       # 렌더링 시 카메라의 최소 깊이 
   z_far: 3.0                                        # 렌더링 시 카메라의 최대 깊이 
   use_imagenet_normalize: true                      # ResNet Encoder 사용 시 필수 (ImageNet 통계로 정규화)
@@ -27,7 +27,7 @@ data:
   num_test_instances: 10000                         # 테스트(최종 평가)에 사용할 객체 수 -> 전체사용 
   
 model:
-  encoder_type: "resnet34"                          # 이미지 특징 추출 백본 (resnet18, 34, 50 등)
+  encoder_type: "resnet34"                          # 이미지 특징 추출 백본 (resnet18, 34, 50, ...)
   encoder_pretrained: true                          # ImageNet 사전 학습된 가중치 사용 여부
   feature_dim: 512                                  # 추출할 특징 벡터의 차원 (메모리에 영향)
   d_hidden: 256                                     # NeRF MLP 내부의 은닉층 차원 수
@@ -35,7 +35,7 @@ model:
   combine_type: "average"                           # 여러 뷰의 특징을 합치는 방식 : average + variance 
   n_coarse: 64                                      # Coarse 단계: 광선(Ray) 하나당 샘플링 포인트 수
   n_fine: 192                                       # Fine 단계: 추가 정밀 샘플링 수 (이미지 해상도 내 활용가능)
-  white_bkgd : true                                 # 투명 배경을 흰색으로 처리 (ShapeNet 등 객체 데이터 필수)
+  white_bkgd : true                                 # 투명 배경을 흰색으로 처리 
   noise_std: 0.5                                    # 학습 초기 밀도에 주입할 노이즈 (Overfitting 방지)
   use_pe: true                                      # Positional Encoding 사용 여부 (고주파 디테일 표현)
   pe_freq_pos: 10                                   # 위치 정보(x,y,z) 인코딩 주파수
@@ -75,8 +75,8 @@ scheduler:
   gamma: 0.98                                       # 매 Epoch마다 학습률 0.98배
 
 inference:
-  checkpoint_path: "./checkpoints/best_model_256.pth"  # 추론에 사용할 학습된 모델 경로
-  output_dir: "./outputs"                              # 결과물(이미지, 영상) 저장 경로
+  checkpoint_path: "./checkpoints/best_model_256.pth"  # 추론에 사용할 모델 가중치 경로로 수정
+  output_dir: "./outputs"                              # 결과물(이미지, 영상) 저장할 경로
   video_fps: 30                                        # 생성할 비디오의 초당 프레임 수
   chunk_size: 1024                                     # 추론 시 메모리 관리용 청크 (OOM 발생 시 줄일 것)
 
@@ -84,7 +84,7 @@ inference:
 tto:
   enabled: true                                     # Test-Time Optimization (추론 시 추가 최적화) 사용 여부
   num_steps: 500                                    # TTO 최적화 반복 횟수
-  learning_rate: 0.00001                            # TTO 학습률 (매우 작게 설정)
+  learning_rate: 0.00001                            # TTO 학습률 
   batch_rays: 512                                   # TTO 수행 시 사용할 Ray 배치 크기
   image_size: [256, 256]                            # TTO용 고해상도 이미지 크기
 
