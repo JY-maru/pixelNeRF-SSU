@@ -189,19 +189,11 @@ $$
 ### 1. Data Loading
 
 
--  **Option A. Google Drive 공유 폴더 이용 (권장)**
+-  **Google Drive 공유 폴더 활용**
 
 1.  **[ShapeNet Cars Dataset](https://drive.google.com/drive/folders/16oQiOyoA_9nHSqFn-jom9AJrChN2iMZV?usp=sharing)** 에 접속합니다.
 2.  자신의 드라이브에 추가한 뒤,  데이터 경로(`config` )를 저장된 경로로 지정하여 사용하면 됩니다.
 
--  **Option B. 쉘 스크립트 이용**
-
-스토리지에 등록된 사용자라면 별도의 다운로드 스크립트를 통해 데이터를 곧바로 로드할 수 있습니다.
-
-```bash
-# Colab 셀에서 실행
-!bash fetch2local.sh -from nerf-data-ssu/shapeNetV2_cars
-```
 
 ### 2. Training
 최초 실행 시 기하학적 필터링을 위한 캐시(.pt) 생성으로 인해 시작에 약 5~10분이 소요될 수 있습니다. (학습 시 A100 권장)
