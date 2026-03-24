@@ -12,9 +12,9 @@
 
 ## Demo Results
 
-\<p align="center"\>
-\<img src="images/rendering\_demo.gif" alt="Demo Results" width="800"\>
-\</p\>
+<p align="center">
+<img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/rendering_demo.gif" alt="Demo Results" width="800">
+</p>
 
 <br>
 
@@ -24,15 +24,15 @@
 
 본 프로젝트의 핵심 목표는 자율주행 및 컴퓨터 비전 모델의 학습 데이터 확보를 위한 고품질 차량 데이터 증강입니다. 현실 세계에서 차량의 모든 각도 데이터를 수집하는 것은 막대한 비용이 소요되므로, 소수의 차량 이미지(3-views)만으로도 정교한 3D 형상을 복원하고 다양한 각도의 새로운 시점 데이터를 생성하는 것을 목표로 합니다. 이를 위해 제한된 클라우드 자원 하에서도 최상의 기하학적 퀄리티를 확보하고자 다음과 같은 트러블슈팅 및 최적화 전략을 수행했습니다.
 
-#### 1.  Geometric Data Filtering : 좌표계 분석 및 정제
+### 1.  Geometric Data Filtering : 좌표계 분석 및 정제
 - 데이터의 카메라 좌표계를 고려치 않고 모델 파인 튜닝 시 소스 뷰에 대한 타겟 뷰가 생성되지 않는 문제를 겪었습니다. 또한 학습 데이터인 ShapeNet 원본 데이터에는 실제 차량 인식 환경에서 불필요한 바닥면이나 수직 하강 뷰가 다수 포함되어 있습니다. 적은 수의 이미지로 다중 차량 이미지를 증강한다는 목표를 달성하기에는 이러한 노이즈 데이터가 모델 수렴을 심각하게 지연시켰습니다.
 - **해결** : openGL 방식으로 진행 시 카메라의 뒤를 방향으로 바라보고 학습하게 되고, openCV방식은 카메라 전방 방면으로 학습을 진행합니다. 카메라 좌표계가 OpenCV 기준인지 분석하고 모델에 맞게 변환 행렬을 수정했습니다. 이후 카메라의 고도각을 동적으로 계산하여, 사용자 시나리오에 부합하는 0도에서 60도 사이의 데이터만 전처리 및 학습에 사용되도록 필터링 로직을 구축했습니다.
 
-#### 2.  Early Fusion with Variance : 학습 안정화 및 피처 병합 최적화 
+### 2.  Early Fusion with Variance : 학습 안정화 및 피처 병합 최적화 
 - Colab 환경의 한계로 인해 배치 크기와 레이어 수를 줄여야 했고, 네트워크 매 층마다 피처를 전달하는 기존 방식은 차량 이미지의 형태 수렴보다는 배경과 객체의 구분을 모호하게 만들어 차량 객체의 경계가 희미해지는 현상이 지속되는 등 학습 초반의 불안정성을 키웠습니다.
 - **해결** : 학습 전체 시간을 줄이고 적은 연산량으로도 빠른 수렴을 유도하기 위해 Average Pooling과 분산 기반의 Early Fusion 전략을 도입했습니다. 분산값을 통해 특정 각도에서 가려진 물체에 낮은 가중치를 부여하게 만들어, 초기 5만 스텝 기준 13.65 PSNR에서 18.61 PSNR로 개선된 수렴 속도를 확보했습니다.
 
-#### 3.  Feature Pyramid Network : 해상도 한계 극복 및 디테일 보존
+### 3.  Feature Pyramid Network : 해상도 한계 극복 및 디테일 보존
 - Coarse/Fine 네트워크를 거치며 차량 이미지에 대한 피처, 특히 RGB 값이 끝까지 전달되지 않아 렌더링 결과물이 흑백으로 나오는 현상이 지속되었습니다. 또한 128x128 저해상도 학습으로 인해 차량 문, 바퀴, 사이드미러 등 핵심 디테일이 소실되었습니다.
 - **해결** : 단순 피처 전달을 넘어 FPN 구조를 도입하여 다중 해상도의 피처맵을 추출하고 MLP 네트워크 깊은 곳까지 1차원 벡터 형태로 전달되도록 입력 벡터의 차원을 늘려 학습을 진행합니다. 밀도($\sigma$)와 RGB가 MLP 입력에 명확히 전달되도록 Coarse/Fine 각 네트워크에서 입력 차원을 늘려 학습한 결과 초기 학습 시 흑백 현상이 해결되었고, 2번의 빠른 차량 형태 수렴 성과와 함께 밀도 + 색상 학습을 보다 안정적으로 수행하게 하였습니다. 그 결과 적은 파라미터 수로도 미세한 디테일을 살려내며 최종 21.16 PSNR을 달성했습니다.
 
@@ -75,44 +75,44 @@ pixelNeRF-SSU/
 
 ## Model Architecture & Pipeline
 
-제한된 환경에서 다중 뷰 정보를 효과적으로 처리하기 위해 모델 아키텍처를 Stereo Matching 원리에 입각하여 고도화했습니다. 전체 파이프라인은 아래의 순서로 진행됩니다.
+제한된 환경에서 다중 뷰 정보를 효과적으로 처리하기 위해 모델 아키텍처를 FPN + Stereo Matching 원리에 입각하여 고도화했습니다. 전체 파이프라인은 아래의 순서로 진행됩니다.
 
-1.  Multi-Scale Feature Extraction (FPN)
-    기존 ResNet의 단일 레이어 특징맵만 사용할 경우 발생하는 정보 손실을 막기 위해 FPN을 도입했습니다.
+### 1. Multi-Scale Feature Extraction (FPN)
+기존 ResNet의 단일 레이어 특징맵만 사용할 경우 발생하는 정보 손실을 막기 위해 FPN을 도입했습니다.
 
-\<p align="center"\>
-\<img src="/images/1-2.encoder(FPN).jpg" alt="FPN structure" width="800"\>
-\</p\>
+<p align="center">
+<img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-2.encoder(FPN).jpg" alt="FPN structure" width="800">
+</p>
 
-구조: ResNet Backbone을 통해 4가지 해상도의 특징맵과 원본 RGB를 추출합니다.
-효과: Global Shape와 Fine Detail을 동시에 학습하여 디테일한 복원이 가능합니다.
+- 구조: ResNet Backbone을 통해 4가지 해상도의 특징맵과 원본 RGB를 추출합니다.
+- 효과: Global Shape와 Fine Detail을 동시에 학습하여 디테일한 복원이 가능합니다.
 
-2.  World-to-Pixel Projection & Feature Fetching
-    타겟 뷰의 픽셀에 대응하는 3D 좌표를 소스 뷰로 투영하여 특징을 추출하는 과정입니다.
+### 2. World-to-Pixel Projection & Feature Fetching
+타겟 뷰의 픽셀에 대응하는 3D 좌표를 소스 뷰로 투영하여 특징을 추출하는 과정입니다.
 
-\<p align="center"\>
-\<img src="/images/1-1.world2source.jpg" alt="World to Source Projection" width="800"\>
-\</p\>
+<p align="center">
+<img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-1.world2source.jpg" alt="World to Source Projection" width="800">
+</p>
 
-Target Ray 위의 3D 샘플 포인트들을 Source View의 2D 평면으로 투영합니다. 투영된 위치에서 FPN으로 추출한 Multi-scale Feature를 가져옵니다.
+- Target Ray 위의 3D 샘플 포인트들을 Source View의 2D 평면으로 투영합니다. 투영된 위치에서 FPN으로 추출한 Multi-scale Feature를 가져옵니다.
 
-3.  Early Fusion with Variance
-    여러 뷰에서 가져온 특징들을 합치는 과정에서, 단순 평균 뿐만 아니라 분산 정보를 추가하고 손실을 막기 위해 피처를 재주입합니다.
+### 3. Early Fusion with Variance
+여러 뷰에서 가져온 특징들을 합치는 과정에서, 단순 평균 뿐만 아니라 분산 정보를 추가하고 손실을 막기 위해 Feature를 재 주입합니다.
 
-\<p align="center"\>
-\<img src="/images/1-3.mean+var.jpg" alt="Mean and Variance Fusion" width="800"\>
-\</p\>
+<p align="center">
+<img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-3.mean%2Bvar.jpg" alt="Mean and Variance Fusion" width="800">
+</p>
 
 분산은 여러 카메라가 동일한 색상 및 특징을 보고 있는가를 나타내는 Stereo Cue입니다.
-Low Variance: 실제 물체 표면일 확률이 높음.
-High Variance: 허공이거나 다른 객체에 의해 가려진 영역으로 판단하여 가중치 저하.
+- Low Variance: 실제 물체 표면일 확률이 높음.
+- High Variance: 허공이거나 다른 객체에 의해 가려진 영역으로 판단하여 가중치 저하.
 
-4.  Volume Rendering Pipeline
-    추출된 특징들은 Coarse/Fine MLP를 거쳐 밀도와 색상으로 변환되며, 이를 Volume Rendering 적분을 통해 최종 픽셀 색상으로 합성합니다.
+### 4. Volume Rendering Pipeline
+추출된 특징들은 Coarse/Fine MLP를 거쳐 밀도와 색상으로 변환되며, 이를 Volume Rendering 적분을 통해 최종 픽셀 색상으로 합성합니다.
 
-\<p align="center"\>
-\<img src="/images/1-4.volume\_rendering.jpg" alt="Volume Rendering Pipeline" width="800"\>
-\</p\>
+<p align="center">
+<img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-4.volume_rendering.jpg" alt="Volume Rendering Pipeline" width="800">
+</p>
 
 최종 픽셀의 색상은 광선 상의 모든 샘플 포인트의 기여도를 합산하여 계산됩니다.
 
@@ -124,16 +124,16 @@ $T_i$ (도달 확률): 광선이 i번째 지점까지 장애물 없이 도달할
 $(1 - e^{-\sigma_i \delta_i})$ (불투명도): 해당 구간에서 입자가 존재하여 광선이 부딪힐 확률 (여기서 밀도 기호는 NeRF 학계 표준에 따라 $\sigma$를 사용합니다).
 $c_i$ (색상): 해당 지점의 RGB 색상.
 
-5.  Training Strategy (Coarse-to-Fine)
-    렌더링된 이미지는 Ground Truth 이미지와 비교되어 학습됩니다.
+#### 5. Training Strategy (Coarse-to-Fine)
+렌더링된 이미지는 Ground Truth 이미지와 비교되어 학습됩니다.
 
-\<p align="center"\>
-\<img src="/images/1-5.pred\_GT.jpg" alt="Training and Loss" width="800"\>
-\</p\>
+<p align="center">
+<img src="https://raw.githubusercontent.com/JY-maru/pixelNeRF-SSU/main/images/1-5.pred_GT.jpg" alt="Training and Loss" width="800">
+</p>
 
-Coarse Pass: 전체 영역을 균일하게 샘플링하여 대략적인 형상을 파악.
-Fine Pass: Coarse 단계에서 물체가 있을 확률이 높은 곳을 집중적으로 샘플링하여 디테일 보정.
-Loss: Coarse와 Fine 출력 모두에 대해 MSE Loss를 계산하여 최적화를 수행합니다.
+- Coarse Pass: 전체 영역을 균일하게 샘플링하여 대략적인 형상을 파악.
+- Fine Pass: Coarse 단계에서 물체가 있을 확률이 높은 곳을 집중적으로 샘플링하여 디테일 보정.
+- Loss: Coarse와 Fine 출력 모두에 대해 MSE Loss를 계산하여 최적화를 수행합니다.
 
 <br>
 
@@ -141,7 +141,7 @@ Loss: Coarse와 Fine 출력 모두에 대해 MSE Loss를 계산하여 최적화�
 
 ## Model Performance
 
-본 모델은 제한된 클라우드 컴퓨팅 환경 내에서 파이프라인 최적화를 거쳐 단 30시간 동안 효율적인 학습을 수행했습니다. 기하학적 필터링과 FPN 아키텍처를 결합한 결과, 256x256 해상도에서 평균 PSNR 24.50 dB, SSIM 0.9649를 기록했습니다. 이는 기존 베이스라인 대비 차량 휠, 측면 도어 등 세부 형상의 렌더링 손실을 대폭 방어해 낸 수치입니다.
+본 모델은 제한된 클라우드 컴퓨팅 환경 내에서 위와 같은 파이프라인 최적화를 거쳐 30시간의 학습으로 아래와 같은 정량적 수치를 기록했습니다. 기하학적 필터링과 FPN + Stereo Matching 아키텍처를 결합한 결과, 128x128 해상도에서 평균 PSNR 21.30, 256x256 해상도에서 평균 PSNR 24.50 dB (SSIM 0.9649)를 기록했습니다. 이는 기존 베이스라인 대비 차량 휠, 측면 도어 등 세부 형상의 렌더링 손실을 줄여 Demo결과처럼 다양한 각도 View의 객체 디테일을 보존하게 되었습니다.
 
 | Input Views | Resolution | Training Steps | Feature Fusion | PSNR (dB) | SSIM |
 | :---: | :---: | :---: | :---: | :---: | :---: |
