@@ -120,11 +120,11 @@ $$
 \hat{C} = \sum_{i} T_i \cdot (1 - e^{-\sigma_i \delta_i}) \cdot c_i
 $$
 
-$T_i$ (도달 확률): 광선이 i번째 지점까지 장애물 없이 도달할 확률.
-$(1 - e^{-\sigma_i \delta_i})$ (불투명도): 해당 구간에서 입자가 존재하여 광선이 부딪힐 확률 (여기서 밀도 기호는 NeRF 학계 표준에 따라 $\sigma$를 사용합니다).
-$c_i$ (색상): 해당 지점의 RGB 색상.
+- $T_i$ (도달 확률): 광선이 i번째 지점까지 장애물 없이 도달할 확률.
+- $(1 - e^{-\sigma_i \delta_i})$ (불투명도): 해당 구간에서 입자가 존재하여 광선이 부딪힐 확률 (여기서 밀도 기호는 NeRF 학계 표준에 따라 $\sigma$를 사용합니다).
+- $c_i$ (색상): 해당 지점의 RGB 색상.
 
-#### 5. Training Strategy (Coarse-to-Fine)
+### 5. Training Strategy (Coarse-to-Fine)
 렌더링된 이미지는 Ground Truth 이미지와 비교되어 학습됩니다.
 
 <p align="center">
