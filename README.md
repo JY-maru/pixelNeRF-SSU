@@ -207,7 +207,7 @@ $c_i$ (색상): 해당 지점의 RGB 색상.
 
 ## Acknowledgement & Citation
 
-This project builds upon the official implementation of PixelNeRF. We optimized it for constrained environments by introducing FPN encoders, Variance-based Early Fusion, and Geometric data pruning.
+This project builds upon the official implementation of [PixelNeRF](https://github.com/sxyu/pixel-nerf). We optimized it for constrained environments by introducing FPN encoders, Variance-based Early Fusion, and Geometric data pruning.
 
 If you use this code for your research, please cite the original Pixel-NeRF paper:
 
